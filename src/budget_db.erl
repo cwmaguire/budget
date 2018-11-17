@@ -15,4 +15,4 @@ query(Conn, Sql) ->
     query(Conn, Sql, []).
 
 query(Conn, Sql, Params) ->
-    epgsql:equery(Conn, Sql, [Params]).
+    epgsql:equery(Conn, Sql, Params).
