@@ -94,7 +94,7 @@ date(DateString) ->
 
 date(DateString, Sep) ->
     [D1, D2, D3] = string:split(DateString, Sep, all),
-    case D1 > 12 of
+    case l2i(D1) > 12 of
         true ->
             {_Year = l2i(D1), _Month = l2i(D2), _Day = l2i(D3)};
         false ->

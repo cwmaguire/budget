@@ -40,13 +40,20 @@ i2l(I) ->
 insert(rbc, HashedRecords, DbOpts) ->
     ParsedRecs = [parse(rbc, R) || R <- HashedRecords],
     Sql = "insert into transaction "
-          "(hash, acct_type, acct_num, date, "
+          "(id, acct_type, acct_num, date, "
           " cheq_num, desc_1, desc_2, cad, usd) "
           "values "
           "($1, $2, $3, $4, $5, $6, $7, $8, $9); ",
     {ok, Conn} = budget_db:connect(DbOpts),
     Result = [{budget_db:query(Conn, Sql, R), R} || R <- ParsedRecs],
-    [print_error(Err, Rec) || {{error, Err}, Rec} <- Result],
+    Errors = [{Err, Rec} || {{error, Err}, Rec} <- Result],
+    [print_error(Err, Rec) || {Err, Rec} <- Errors],
+    NumRecords = length(ParsedRecs),
+    NumErrors = length(Errors),
+    NumInserted = NumRecords - NumErrors,
+    io:format(user,
+              "Records: ~p, Inserted: ~p, Errors: ~p~n",
+              [NumRecords, NumInserted, NumErrors]),
     budget_db:close(Conn).
 
 parse(rbc, Rec) ->
