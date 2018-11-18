@@ -12,7 +12,8 @@ import(Type, Path) ->
     [_Header | Records] = budget_csv:parse(File),
     HashedRecords = hashed_records(Records),
     application:stop(xxhash),
-    insert(Type, HashedRecords, DbOpts).
+    Inserts = insert(Type, HashedRecords, DbOpts),
+    categorize(Type, Inserts, DbOpts).
 
 hashed_records(Records) ->
     [hashed_record(R) || R <- Records].
@@ -45,8 +46,10 @@ insert(rbc, HashedRecords, DbOpts) ->
           "values "
           "($1, $2, $3, $4, $5, $6, $7, $8, $9); ",
     {ok, Conn} = budget_db:connect(DbOpts),
-    Result = [{budget_db:query(Conn, Sql, R), R} || R <- ParsedRecs],
-    Errors = [{Err, Rec} || {{error, Err}, Rec} <- Result],
+    Results = [{budget_db:query(Conn, Sql, R), R} || R <- ParsedRecs],
+    budget_db:close(Conn),
+    Inserts = [Rec || {{ok, _}, Rec} <- Results],
+    Errors = [{Err, Rec} || {{error, Err}, Rec} <- Results],
     [print_error(Err, Rec) || {Err, Rec} <- Errors],
     NumRecords = length(ParsedRecs),
     NumErrors = length(Errors),
@@ -54,7 +57,7 @@ insert(rbc, HashedRecords, DbOpts) ->
     io:format(user,
               "Records: ~p, Inserted: ~p, Errors: ~p~n",
               [NumRecords, NumInserted, NumErrors]),
-    budget_db:close(Conn).
+    Inserts.
 
 parse(rbc, Rec) ->
     [Hash, Type, Acct, Date, ChequeNum, Desc1, Desc2, Cad, Usd] = Rec,
@@ -92,3 +95,51 @@ print_error({error,
               [Error, Detail, Record]);
 print_error(Error, Record) ->
     io:format("Error:~n    ~p~n    Record: ~p~n", [Error, Record]).
+
+categorize(Type, Recs, DbOpts) ->
+    {ok, Conn} = budget_db:connect(DbOpts),
+    RulesSql = "select * "
+               "from category_rule "
+               "order by \"order\";",
+    {ok, _, RuleRecs} = budget_db:query(Conn, RulesSql),
+    Rules = [{binary_to_list(M), CId} || {_, _, M, CId} <- RuleRecs],
+    io:format(user, "Rules = ~p~n", [Rules]),
+    CompiledRules0 = [{re:compile(M, [caseless]), CId} || {M, CId} <- Rules],
+    io:format(user, "CompiledRules0 = ~p~n", [CompiledRules0]),
+    CompiledRules = [{M, CId} || {{ok, M}, CId} <- CompiledRules0],
+    Matches = matches(Type, Recs, CompiledRules),
+    InsFun = fun insert_tx_category/3,
+    Results = [{InsFun(Tx, Cat, Conn), {Tx, Cat}} || {Tx, Cat} <- Matches],
+    NumRules = length(Rules),
+    NumTx = length(Recs),
+    NumMatches = length(Matches),
+    io:format("Found ~p matches between ~p transactions and ~p rules~n",
+              [NumMatches, NumTx, NumRules]),
+    [print_error(Err, Rec) || {{error, Err}, Rec} <- Results],
+    budget_db:close(Conn).
+
+matches(rbc, Recs, Rules) ->
+    %io:format(user, "Rules = ~p~n", [Rules]),
+    Fields = [rbc_match_fields(Rec) || Rec <- Recs],
+    %io:format(user, "Fields = ~p~n", [Fields]),
+    Results = [{Id, re:run(Desc, M), Cat} || {Id, Desc} <- Fields,
+                                             {M, Cat} <- Rules],
+    io:format(user, "Results = ~p~n", [Results]),
+    lists:usort([{Tx, Cat} || {Tx, {match, _}, Cat} <- Results]).
+
+rbc_match_fields([Id, _, _, _, _, Desc1, Desc2, _, _]) ->
+    {Id, lists:flatten([null_to_list(Desc1), " ", null_to_list(Desc2)])}.
+
+null_to_list(null) ->
+    "";
+null_to_list(List) ->
+    List.
+
+insert_tx_category(Tx, Cat, Conn) ->
+    Sql = "insert into transaction_category (tx_id, cat_id) "
+          "values "
+          "($1, $2) "
+          "on conflict do nothing;",
+    budget_db:query(Conn, Sql, [Tx, Cat]).
+
+

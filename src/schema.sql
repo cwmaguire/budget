@@ -13,16 +13,15 @@ create table transaction(
 create unique index on transaction(id);
 
 create table category(
-  id int primary key,
+  id serial primary key,
   name varchar unique not null);
 
 create table transaction_category(
-  id int primary key,
+  id serial primary key,
   tx_id numeric references transaction(id),
   cat_id int references category(id));
 
 create table category_rule(
-  id int primary key,
-  "order" int,
+  id serial primary key,
   match varchar,
   cat_id int references category(id));
