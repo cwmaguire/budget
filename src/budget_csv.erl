@@ -11,7 +11,6 @@ parse(Csv) ->
     [[parse_value(F) || F <- Rec] || Rec <- Records].
 
 record(Bin) ->
-    %io:format(user, "Bin = ~p~n", [Bin]),
     record(none, Bin, _Field = <<>>, _Fields = []).
 
 %% F = Field, Fs = Fields
@@ -20,11 +19,8 @@ record(none, <<$,, Bin/binary>>, _F, Fs) ->
 record(none, <<I, Bin/binary>>, _F, Fs) when ?IS_INT(I); I == $- ->
     record(integer, Bin, <<I>>, Fs);
 record(none, <<$", Bin/binary>>, _F, Fs) ->
-    %io:format(user, "Start of quoted string ~p~n", [<<$", Bin/binary>>]),
-    %io:format(user, "Tail of quoted string ~p~n", [Bin]),
     record(qstring, Bin, <<>>, Fs);
 record(none, <<S, Bin/binary>>, _F, Fs) ->
-    %io:format(user, "Start of non-quoted string ~p~n", [<<S, Bin/binary>>]),
     record(string, Bin, <<S>>, Fs);
 record(_, <<>>, _, Fs) ->
     lists:reverse(Fs);
@@ -50,6 +46,8 @@ record(float, <<$,, Bin/binary>>, F, Fs) ->
 record(float, <<I>>, F, Fs) when ?IS_INT(I) ->
     Field = binary_to_float(<<F/binary, I>>),
     lists:reverse([Field | Fs]);
+record(float, <<S, Bin/binary>>, F, Fs) ->
+    record(string, Bin, <<F/binary, S>>, Fs);
 
 record(qstring, <<$", $,, Bin/binary>>, F, Fs) ->
     Field = binary_to_list(F),

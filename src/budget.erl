@@ -8,14 +8,9 @@ main([Type, Path | _]) ->
 import(Type, Path) ->
     application:start(xxhash),
     {ok, [DbOpts]} = file:consult("db_opts"),
-    io:format(user, "DbOpts = ~p~n", [DbOpts]),
     {ok, File} = file:read_file(Path),
-    %io:format(user, "File = ~p~n", [File]),
     [_Header | Records] = budget_csv:parse(File),
-    io:format(user, "Records = ~p~n", [Records]),
     HashedRecords = hashed_records(Records),
-    %io:format(user, "HashedRecords = ~p~n", [HashedRecords]),
-    %io:format(user, "HashedRecords = ~p~n", [HashedRecords]),
     application:stop(xxhash),
     insert(Type, HashedRecords, DbOpts).
 
@@ -23,8 +18,6 @@ hashed_records(Records) ->
     [hashed_record(R) || R <- Records].
 
 hashed_record(Rec) ->
-    io:format(user, "Hashing ~p~n", [Rec]),
-
     Strings = [serialize(Field) || Field <- Rec],
     String = lists:flatten(Strings),
     Hash = xxhash:hash64(String),
@@ -52,17 +45,11 @@ insert(rbc, HashedRecords, DbOpts) ->
           "values "
           "($1, $2, $3, $4, $5, $6, $7, $8, $9); ",
     {ok, Conn} = budget_db:connect(DbOpts),
-    %io:format(user, "Conn = ~p~n", [Conn]),
-    X = gen_server:call(Conn, {command,
-                               epgsql_cmd_parse,
-                               {"", Sql, []}},
-                        infinity),
-    io:format(user, "X = ~p~n", [X]),
-    [budget_db:query(Conn, Sql, R) || R <- ParsedRecs],
+    Result = [{budget_db:query(Conn, Sql, R), R} || R <- ParsedRecs],
+    [print_error(Err, Rec) || {{error, Err}, Rec} <- Result],
     budget_db:close(Conn).
 
 parse(rbc, Rec) ->
-    io:format(user, "Rec = ~p~n", [Rec]),
     [Hash, Type, Acct, Date, ChequeNum, Desc1, Desc2, Cad, Usd] = Rec,
     Acct1 = to_list(Acct),
     Rec1 = [Hash, Type, Acct1, Date, ChequeNum, Desc1, Desc2, Cad, Usd],
@@ -73,35 +60,28 @@ to_list(List) when is_list(List) ->
 to_list(Int) when is_integer(Int) ->
     integer_to_list(Int).
 
-% to_date("") ->
-%     null;
-% to_date(List) ->
-%     [M, D, Y] = string:split(List, "/", all),
-%     {Y, M, D}.
-
-% to_int(null) ->
-%     null;
-% to_int(List) ->
-%     list_to_integer(List).
-
-% to_float(null) ->
-%     null;
-% to_float(List) ->
-%     case has_decimal(List) of
-%         true ->
-%             list_to_float(List);
-%         false ->
-%             list_to_float(List ++ ".0")
-%     end.
-
-% has_decimal("") ->
-%     false;
-% has_decimal("." ++ _) ->
-%     true;
-% has_decimal([_ | Rest]) ->
-%     has_decimal(Rest).
-
 normalize("") ->
     null;
 normalize(Val) ->
     Val.
+
+%{error,error,<<"23505">>,unique_violation,
+%       <<"duplicate key value violates unique constraint \"transaction_hash_idx\"">>,
+%       [{constraint_name,<<"transaction_hash_idx">>},
+%        {detail,<<"Key (hash)=(12127115697651675763) already exists.">>},
+%        {file,<<"nbtinsert.c">>},
+%        {line,<<"424">>},
+%        {routine,<<"_bt_check_unique">>},
+%        {schema_name,<<"public">>},
+%        {table_name,<<"transaction">>}]}]
+print_error({error,
+             error,
+             _,
+             unique_violation,
+             Error,
+             [_, Detail | _]},
+            Record) ->
+    io:format("Error: duplicate record:~n    ~p~n    ~p~n    Record: ~p~n",
+              [Error, Detail, Record]);
+print_error(Error, Record) ->
+    io:format("Error:~n    ~p~n    Record: ~p~n", [Error, Record]).
