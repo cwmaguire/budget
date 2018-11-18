@@ -1,1 +1,16 @@
-<html><body></body></html>
+<html>
+  <script language="JavaScript">
+    function q(from, to){
+      var oldScript = document.getElementById("fetch");
+      if(oldScript){
+        oldScript.remove();
+      }
+      var s = document.createElement("script");
+      s.src = "http://localhost:8080/?callback=b&from=" + from + "&to=" + to;
+      s.id = "fetch";
+      document.body.appendChild(s);
+    }
+  </script>
+  <body>
+  </body>
+</html>

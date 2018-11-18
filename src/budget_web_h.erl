@@ -46,9 +46,13 @@ budget_post(Req, State) ->
 	end.
 
 %budget_get(Req, #{from_date := From, to_date := To}) ->
-budget_get(Req, _) ->
-    From = {2018, 10, 1},
-    To = {2018, 11, 1},
+budget_get(Req, State) ->
+    QsVals = cowboy_req:parse_qs(Req),
+    {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
+    {_, RawFrom} = lists:keyfind(<<"from">>, 1, QsVals),
+    {_, RawTo} = lists:keyfind(<<"to">>, 1, QsVals),
+    From = to_date(RawFrom),
+    To = to_date(RawTo),
     Sql = "select cad, desc_1 from transaction "
           "where date between $1 and $2; ",
     {ok, Conn} = budget_db:connect(),
@@ -56,4 +60,16 @@ budget_get(Req, _) ->
     Tuples = [[{cad, Cad}, {desc, Desc}] || {Cad, Desc} <- Txs],
     budget_db:close(Conn),
     Json = jsx:encode(Tuples),
-	{Json, Req, index}.
+    Script = <<"function ",
+             Callback/binary,
+             "(){return ", Json/binary, ";};">>,
+	{Script, Req, State}.
+
+to_date(List) ->
+    DateStrings = string:split(List, "-", all),
+    list_to_tuple([to_int(DS) || DS <- DateStrings]).
+
+to_int(List) when is_list(List) ->
+    list_to_integer(List);
+to_int(Bin) when is_binary(Bin) ->
+    binary_to_integer(Bin).
