@@ -6,10 +6,43 @@
         oldScript.remove();
       }
       var s = document.createElement("script");
-      s.src = "http://localhost:8080/?callback=b&from=" + from + "&to=" + to;
+      s.src = "http://localhost:8080/?callback=load&from=" + from + "&to=" + to;
       s.id = "fetch";
+
+      s.onload = function() { 
+        console.log('script loaded.');
+        loadTable();
+      };
+
       document.body.appendChild(s);
+
     }
+
+    //function sleep(ms) {
+    //  return new Promise(resolve => setTimeout(resolve, ms));
+    //}
+
+    function loadTable(){
+      var records = load();
+
+      var oldTable = document.getElementById("table1");
+      if(oldTable){
+        oldTable.remove();
+      }
+      var table = document.createElement("table");
+      table.id = "table1";
+      records.forEach(function(element){
+                        console.log('element');
+                        var row = table.insertRow();
+                        var cell1 = row.insertCell(0);
+                        var cell2 = row.insertCell(1);
+                        // Add some text to the new cells:
+                        cell1.innerHTML = element.cad;
+                        cell2.innerHTML = element.desc;
+                      });
+      document.body.appendChild(table);
+    }
+
   </script>
   <body>
   </body>
