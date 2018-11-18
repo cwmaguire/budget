@@ -103,9 +103,7 @@ categorize(Type, Recs, DbOpts) ->
                "order by \"order\";",
     {ok, _, RuleRecs} = budget_db:query(Conn, RulesSql),
     Rules = [{binary_to_list(M), CId} || {_, _, M, CId} <- RuleRecs],
-    io:format(user, "Rules = ~p~n", [Rules]),
     CompiledRules0 = [{re:compile(M, [caseless]), CId} || {M, CId} <- Rules],
-    io:format(user, "CompiledRules0 = ~p~n", [CompiledRules0]),
     CompiledRules = [{M, CId} || {{ok, M}, CId} <- CompiledRules0],
     Matches = matches(Type, Recs, CompiledRules),
     InsFun = fun insert_tx_category/3,
@@ -119,12 +117,9 @@ categorize(Type, Recs, DbOpts) ->
     budget_db:close(Conn).
 
 matches(rbc, Recs, Rules) ->
-    %io:format(user, "Rules = ~p~n", [Rules]),
     Fields = [rbc_match_fields(Rec) || Rec <- Recs],
-    %io:format(user, "Fields = ~p~n", [Fields]),
     Results = [{Id, re:run(Desc, M), Cat} || {Id, Desc} <- Fields,
                                              {M, Cat} <- Rules],
-    io:format(user, "Results = ~p~n", [Results]),
     lists:usort([{Tx, Cat} || {Tx, {match, _}, Cat} <- Results]).
 
 rbc_match_fields([Id, _, _, _, _, Desc1, Desc2, _, _]) ->
