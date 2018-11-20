@@ -56,13 +56,15 @@ budget_get(Req, State) ->
     io:format("From date is ~p~n", [From]),
     io:format("To date is ~p~n", [To]),
 
+    FieldNames = [id, acct_type, acct_num, date, posted,
+                  cheq_num, desc_1, desc_2, cad, usd],
     Sql = "select * "
           "from transaction "
           "where date between $1 and $2; ",
     {ok, Conn} = budget_db:connect(),
     {ok, _Cols, Txs} = budget_db:query(Conn, Sql, [From, To]),
-    Tuples = [[{cad, Cad}, {desc, Desc}] || {Cad, Desc} <- Txs],
-    io:format("Num records: ~p~n", [length(Tuples)]),
+    Tuples = [lists:zip(FieldNames, tuple_to_list(Tx)) || Tx <- Txs],
+    io:format("Num records: ~p~n", [length(Txs)]),
     budget_db:close(Conn),
     Json = jsx:encode(Tuples),
     Script = <<"function ",

@@ -27,6 +27,9 @@
 
     function loadTable(){
       var records = load();
+      if(records.length == 0){
+        return;
+      }
 
       var oldTable = document.getElementById("table1");
       if(oldTable){
@@ -34,7 +37,22 @@
       }
       var table = document.createElement("table");
       table.id = "table1";
-      console.log('# recs: ' + records.length);
+
+      var header = table.createTHead();
+      var row = header.insertRow(0);
+      var i = 0;
+      var cell;
+      var rec = records[0];
+      console.log("First row: " + rec);
+      for (k in rec){
+        console.log("key = " + k);
+        cell = row.insertCell(i);
+        //cell.innerHTML = rec[k];
+        cell.innerHTML = "" + k;
+        cell.bgcolor = "#000000";
+        i++;
+      }
+
       records.forEach(tableWriter(table));
       document.body.appendChild(table);
     }
