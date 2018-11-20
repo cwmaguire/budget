@@ -43,13 +43,10 @@
       var i = 0;
       var cell;
       var rec = records[0];
-      console.log("First row: " + rec);
       for (k in rec){
-        console.log("key = " + k);
         cell = row.insertCell(i);
-        //cell.innerHTML = rec[k];
         cell.innerHTML = "" + k;
-        cell.bgcolor = "#000000";
+        cell.bgColor = "#D0D0D0";
         i++;
       }
 
@@ -59,13 +56,17 @@
 
     function tableWriter(table){
       return function(obj){
-               console.log('element');
                var row = table.insertRow();
-               var i = 0
+               var i = 0;
                var cell;
+               var val;
                for (var k in obj){
+                 val = obj[k];
+                 if(i == 3){
+                   val = obj[k].split("T")[0];
+                 }
                  cell = row.insertCell(i);
-                 cell.innerHTML = obj[k];
+                 cell.innerHTML = val;
                  i++;
                }
              }
