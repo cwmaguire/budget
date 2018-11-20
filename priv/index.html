@@ -18,10 +18,6 @@
 
     }
 
-    //function sleep(ms) {
-    //  return new Promise(resolve => setTimeout(resolve, ms));
-    //}
-
     function loadTable(){
       var records = load();
 
@@ -31,16 +27,22 @@
       }
       var table = document.createElement("table");
       table.id = "table1";
-      records.forEach(function(element){
-                        console.log('element');
-                        var row = table.insertRow();
-                        var cell1 = row.insertCell(0);
-                        var cell2 = row.insertCell(1);
-                        // Add some text to the new cells:
-                        cell1.innerHTML = element.cad;
-                        cell2.innerHTML = element.desc;
-                      });
+      records.forEach(tableWriter(table));
       document.body.appendChild(table);
+    }
+
+    function tableWriter(table){
+      return function(obj){
+               console.log('element');
+               var row = table.insertRow();
+               var i = 0
+               var cell;
+               for (var k in obj){
+                 cell = row.insertCell(i);
+                 cell.innerHTML = obj[k];
+                 i++;
+               }
+             }
     }
 
   </script>
