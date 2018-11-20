@@ -53,11 +53,16 @@ budget_get(Req, State) ->
     {_, RawTo} = lists:keyfind(<<"to">>, 1, QsVals),
     From = to_date(RawFrom),
     To = to_date(RawTo),
-    Sql = "select cad, desc_1 from transaction "
+    io:format("From date is ~p~n", [From]),
+    io:format("To date is ~p~n", [To]),
+
+    Sql = "select * "
+          "from transaction "
           "where date between $1 and $2; ",
     {ok, Conn} = budget_db:connect(),
     {ok, _Cols, Txs} = budget_db:query(Conn, Sql, [From, To]),
     Tuples = [[{cad, Cad}, {desc, Desc}] || {Cad, Desc} <- Txs],
+    io:format("Num records: ~p~n", [length(Tuples)]),
     budget_db:close(Conn),
     Json = jsx:encode(Tuples),
     Script = <<"function ",
