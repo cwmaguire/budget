@@ -8,6 +8,8 @@
     const lightBlue = "#" + "B0B0D0";
 
     var selectedRowIds = [];
+    var checkboxes = {};
+
     function q(){
       console.log("Running function q");
       var oldScript = document.getElementById("fetch");
@@ -39,6 +41,8 @@
         return;
       }
 
+      checkboxes = {};
+
       var oldTable = document.getElementById("table1");
       if(oldTable){
         oldTable.remove();
@@ -49,17 +53,23 @@
 
       var header = table.createTHead();
       var row = header.insertRow(0);
-      var i = 0;
       var cell;
       var rec = records[0];
+
+      var checkbox = document.createElement("INPUT");
+      checkbox.setAttribute("type", "checkbox");
+      checkbox.id = "allOrNone";
+      checkbox.addEventListener("click", all_or_none_click);
+      cell = row.insertCell(row.cells.length);
+      cell.appendChild(checkbox);
+
       for (k in rec){
         if(k == "id"){
           continue;
         }
-        cell = row.insertCell(i);
+        cell = row.insertCell(row.cells.length);
         cell.innerHTML = "" + k;
         cell.bgColor = lightGrey;
-        i++;
       }
 
       records.forEach(tableWriter(table));
@@ -69,9 +79,17 @@
     function tableWriter(table){
       return function(obj){
                var row = table.insertRow();
-               row.id = obj["id"];
+               row.id = obj.id;
                var cell;
                var val;
+
+               var checkbox = document.createElement("INPUT");
+               checkbox.setAttribute("type", "checkbox");
+               checkbox.id = "cbx" + row.id;
+               checkboxes[row.id] = checkbox;
+               cell = row.insertCell(row.cells.length);
+               cell.appendChild(checkbox);
+
                for (var k in obj){
                  val = obj[k];
                  if(k == "id"){
@@ -82,6 +100,7 @@
                  cell = row.insertCell(row.cells.length);
                  cell.innerHTML = val;
                }
+
                row.style.cursor = "pointer";
                row.addEventListener("mouseover", row_mouse_over);
                row.addEventListener("mouseout", row_mouse_out);
@@ -128,6 +147,7 @@
       var rowId = row.id;
       selectedRowIds.push(rowId);
       cell.parentElement.style.backgroundColor = lightBlue;
+      document.getElementById("allOrNone").checked = true;
     }
 
     function deselect_row(cell){
@@ -135,6 +155,19 @@
       var rowId = row.id;
       selectedRowIds = selectedRowIds.filter(x => x != rowId);
       cell.parentElement.style.backgroundColor = white;
+      if(-1 != Object.values(checkboxes).findIndex(e => e.checked)){
+        document.getElementById("allOrNone").checked = false;
+      }
+    }
+
+    function all_or_none_click(event){
+      if(-1 != Object.values(checkboxes).findIndex(e => e.checked)){
+        Object.values(checkboxes).forEach(e => e.checked = false);
+        event.target.checked = false;
+      }else{
+        Object.values(checkboxes).forEach(e => e.checked = true);
+        event.target.checked = true;
+      }
     }
 
   </script>
