@@ -60,6 +60,7 @@
     function tableWriter(table){
       return function(obj){
                var row = table.insertRow();
+               row.id = obj["id"];
                var cell;
                var val;
                for (var k in obj){
