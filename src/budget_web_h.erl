@@ -64,13 +64,13 @@ budget_get(Req, State) ->
     {ok, Conn} = budget_db:connect(),
     {ok, _Cols, Txs} = budget_db:query(Conn, Sql, [From, To]),
     Txs1 = fix_dates(Txs),
-    io:format("Fixed dates:~n~p~n", [Txs1]),
+    %io:format("Fixed dates:~n~p~n", [Txs1]),
     %[io:format("Date: ~p~n", [element(4, Tx)]) || Tx <- Txs],
     Tuples = [lists:zip(FieldNames, Tx) || Tx <- Txs1],
-    io:format("Num records: ~p~n", [length(Txs1)]),
+    %io:format("Num records: ~p~n", [length(Txs1)]),
     budget_db:close(Conn),
     Json = jsx:encode(Tuples),
-    io:format("JSON: ~n~p~n", [Json]),
+    %io:format("JSON: ~n~p~n", [Json]),
     Script = <<"function ",
              Callback/binary,
              "(){return ", Json/binary, ";};">>,
@@ -91,7 +91,7 @@ fix_dates(List) when is_list(List) ->
 fix_date(List) when is_list(List) ->
     [fix_date(E) || E <- List];
 fix_date({Y, M, D}) when is_integer(Y), is_integer(M), is_integer(D) ->
-    io:format("Replacing date: {~p, ~p, ~p}~n", [Y, M, D]),
+    %io:format("Replacing date: {~p, ~p, ~p}~n", [Y, M, D]),
     {{Y, M, D}, {0, 0, 0}};
 fix_date(Other) ->
     Other.

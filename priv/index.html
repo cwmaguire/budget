@@ -1,5 +1,13 @@
 <html>
+  <head>
+    <link rel="stylesheet" href="budget.css">
+  </head>
   <script language="JavaScript">
+    const white = "#" + "FFFFFF";
+    const lightGrey = "#" + "D0D0D0";
+    const lightBlue = "#" + "B0B0D0";
+
+    var selectedRowIds = [];
     function q(){
       console.log("Running function q");
       var oldScript = document.getElementById("fetch");
@@ -37,6 +45,7 @@
       }
       var table = document.createElement("table");
       table.id = "table1";
+      table.className = "table";
 
       var header = table.createTHead();
       var row = header.insertRow(0);
@@ -49,7 +58,7 @@
         }
         cell = row.insertCell(i);
         cell.innerHTML = "" + k;
-        cell.bgColor = "#D0D0D0";
+        cell.bgColor = lightGrey;
         i++;
       }
 
@@ -76,6 +85,7 @@
                row.style.cursor = "pointer";
                row.addEventListener("mouseover", row_mouse_over);
                row.addEventListener("mouseout", row_mouse_out);
+               row.addEventListener("click", row_mouse_click);
              }
     }
 
@@ -86,12 +96,45 @@
 
     function row_mouse_over(event){
       cell = event.target;
-      cell.parentElement.style.backgroundColor = "#9090FF";
+      if(!is_row_selected(cell)){
+        cell.parentElement.style.backgroundColor = lightGrey;
+      }
     }
 
     function row_mouse_out(event){
-      cell = event.target;
-      cell.parentElement.style.backgroundColor = "#FFFFFF";
+      var cell = event.target;
+      if(!is_row_selected(cell)){
+        cell.parentElement.style.backgroundColor = white;
+      }
+    }
+
+    function row_mouse_click(event){
+      var cell = event.target;
+      if(is_row_selected(cell)){
+        deselect_row(cell);
+      }else{
+        select_row(cell);
+      }
+    }
+
+    function is_row_selected(cell){
+      var row = cell.parentElement;
+      var rowId = row.id;
+      return selectedRowIds.findIndex(x => x == rowId) != -1;
+    }
+
+    function select_row(cell){
+      var row = cell.parentElement;
+      var rowId = row.id;
+      selectedRowIds.push(rowId);
+      cell.parentElement.style.backgroundColor = lightBlue;
+    }
+
+    function deselect_row(cell){
+      var row = cell.parentElement;
+      var rowId = row.id;
+      selectedRowIds = selectedRowIds.filter(x => x != rowId);
+      cell.parentElement.style.backgroundColor = white;
     }
 
   </script>

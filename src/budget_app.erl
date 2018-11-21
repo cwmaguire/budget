@@ -12,7 +12,8 @@ start(_Type, _Args) ->
 	Dispatch = cowboy_router:compile([
 		{'_', [
 			{"/", budget_web_h, []},
-            {"/index.html", cowboy_static, {priv_file, budget, "index.html"}}
+            {"/index.html", cowboy_static, {priv_file, budget, "index.html"}},
+            {"/budget.css", cowboy_static, {priv_file, budget, "budget.css"}}
 		]}
 	]),
 	{ok, _} = cowboy:start_clear(http, [{port, 8080}], #{
