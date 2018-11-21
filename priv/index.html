@@ -69,12 +69,25 @@
                  cell.innerHTML = val;
                  i++;
                }
+               row.style.cursor = "pointer";
+               row.addEventListener("mouseover", row_mouse_over);
+               row.addEventListener("mouseout", row_mouse_out);
              }
     }
 
     function get_val(Id){
       var element = document.getElementById(Id);
       return element.value;
+    }
+
+    function row_mouse_over(event){
+      cell = event.target;
+      cell.parentElement.style.backgroundColor = "#9090FF";
+    }
+
+    function row_mouse_out(event){
+      cell = event.target;
+      cell.parentElement.style.backgroundColor = "#FFFFFF";
     }
 
   </script>
