@@ -44,6 +44,9 @@
       var cell;
       var rec = records[0];
       for (k in rec){
+        if(k == "id"){
+          continue;
+        }
         cell = row.insertCell(i);
         cell.innerHTML = "" + k;
         cell.bgColor = "#D0D0D0";
@@ -57,17 +60,17 @@
     function tableWriter(table){
       return function(obj){
                var row = table.insertRow();
-               var i = 0;
                var cell;
                var val;
                for (var k in obj){
                  val = obj[k];
-                 if(i == 3){
+                 if(k == "id"){
+                   continue;
+                 } else if((k == "date" || k == "posted") && obj[k]){
                    val = obj[k].split("T")[0];
                  }
-                 cell = row.insertCell(i);
+                 cell = row.insertCell(row.cells.length);
                  cell.innerHTML = val;
-                 i++;
                }
                row.style.cursor = "pointer";
                row.addEventListener("mouseover", row_mouse_over);
