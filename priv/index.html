@@ -9,6 +9,7 @@
 
     var selectedRowIds = [];
     var checkboxes = {};
+    var rows = {};
 
     function q(){
       console.log("Running function q");
@@ -80,6 +81,7 @@
       return function(obj){
                var row = table.insertRow();
                row.id = obj.id;
+               rows[row.id] = row;
                var cell;
                var val;
 
@@ -87,6 +89,7 @@
                checkbox.setAttribute("type", "checkbox");
                checkbox.id = "cbx" + row.id;
                checkboxes[row.id] = checkbox;
+               checkbox.addEventListener("click", cbx_mouse_click);
                cell = row.insertCell(row.cells.length);
                cell.appendChild(checkbox);
 
@@ -130,10 +133,17 @@
     function row_mouse_click(event){
       var cell = event.target;
       if(is_row_selected(cell)){
-        deselect_row(cell);
+        deselect_row_by_cell(cell);
       }else{
-        select_row(cell);
+        select_row_by_cell(cell);
       }
+    }
+
+    function cbx_mouse_click(event){
+      var cbx = event.target;
+      var newEvent = {'target': cbx.parentElement};
+      event.stopPropagation();
+      row_mouse_click(newEvent);
     }
 
     function is_row_selected(cell){
@@ -142,32 +152,55 @@
       return selectedRowIds.findIndex(x => x == rowId) != -1;
     }
 
-    function select_row(cell){
+    function is_any_row_selected(){
+      return -1 != Object.values(checkboxes).findIndex(e => e.checked);
+    }
+
+    function select_row_by_cell(cell){
       var row = cell.parentElement;
+      select_row_by_row(row);
+    }
+
+    function select_row_by_row(row){
       var rowId = row.id;
+      select_row(rowId);
+    }
+
+    function select_row(rowId){
       selectedRowIds.push(rowId);
+      checkboxes[rowId].checked = true;
       cell.parentElement.style.backgroundColor = lightBlue;
       document.getElementById("allOrNone").checked = true;
     }
 
-    function deselect_row(cell){
+    function deselect_row_by_cell(cell){
       var row = cell.parentElement;
-      var rowId = row.id;
-      selectedRowIds = selectedRowIds.filter(x => x != rowId);
+      deselect_row(row.id);
+      //selectedRowIds = selectedRowIds.filter(x => x != rowId);
+    }
+
+    function deselect_row(id){
+      checkboxes[id].checked = false;
       cell.parentElement.style.backgroundColor = white;
-      if(-1 != Object.values(checkboxes).findIndex(e => e.checked)){
+      if(!is_any_row_selected()){
         document.getElementById("allOrNone").checked = false;
       }
     }
 
     function all_or_none_click(event){
-      if(-1 != Object.values(checkboxes).findIndex(e => e.checked)){
+      if(is_any_row_selected){
         Object.values(checkboxes).forEach(e => e.checked = false);
         event.target.checked = false;
+        selectedRowIds.forEach(e => deselect_by_id(e));
       }else{
         Object.values(checkboxes).forEach(e => e.checked = true);
         event.target.checked = true;
+        Object.values(rows).forEach(e => select_row_by_row(row));
       }
+    }
+
+    function getById(Id){
+      return document.getElementById(Id);
     }
 
   </script>
