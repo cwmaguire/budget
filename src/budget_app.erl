@@ -13,7 +13,8 @@ start(_Type, _Args) ->
 		{'_', [
 			{"/", budget_web_h, []},
             {"/index.html", cowboy_static, {priv_file, budget, "index.html"}},
-            {"/budget.css", cowboy_static, {priv_file, budget, "budget.css"}}
+            {"/budget.css", cowboy_static, {priv_file, budget, "budget.css"}},
+            {"/budget.js", cowboy_static, {priv_file, budget, "budget.js"}}
 		]}
 	]),
 	{ok, _} = cowboy:start_clear(http, [{port, 8080}], #{
