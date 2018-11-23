@@ -7,34 +7,52 @@ var selectedRowIds = [];
 var checkboxes = {};
 var rows = {};
 
-function q(){
-  //console.log("Running function q");
-  var oldScript = document.getElementById("fetch");
+function fetch_transactions(){
+  const scriptId = "transactionsScript";
+  var oldScript = document.getElementById(scriptId);
   var fromDate = get_val("fromDateText");
   var toDate = get_val("toDateText");
-  //console.log("From date: " + fromDate);
-  //console.log("To date: " + toDate);
   if(oldScript){
     oldScript.remove();
   }
   var s = document.createElement("script");
-  s.src = "http://localhost:8080/?callback=load" + amp + "from="
-    + fromDate
-    + amp + "to="
-    + toDate;
-  s.id = "fetch";
+  s.src = "http://localhost:8080/" +
+    "?type=transaction" +
+    "&callback=transactions" +
+    "&from=" + fromDate +
+    "&to=" + toDate;
+  s.id = scriptId;
 
   s.onload = function() {
-    loadTable();
+    load_transactions();
   };
 
   document.body.appendChild(s);
-
 }
 
-function loadTable(){
-  var records = load();
-  if(records.length == 0){
+function fetch_categories(){
+  console.log("fetch_categories()");
+  const scriptId = "categoriesScript";
+  var oldScript = document.getElementById(scriptId);
+  if(oldScript){
+    oldScript.remove();
+  }
+  var s = document.createElement("script");
+  s.src = "http://localhost:8080/" +
+    "?type=category" +
+    "&callback=categories";
+  s.id = scriptId;
+
+  s.onload = function() {
+    load_categories();
+  };
+
+  document.body.appendChild(s);
+}
+
+function load_transactions(){
+  var txs = transactions();
+  if(txs.length == 0){
     return;
   }
 
@@ -51,7 +69,7 @@ function loadTable(){
   var header = table.createTHead();
   var row = header.insertRow(0);
   var cell;
-  var rec = records[0];
+  var tx = txs[0];
 
   var checkbox = document.createElement("INPUT");
   checkbox.setAttribute("type", "checkbox");
@@ -60,16 +78,16 @@ function loadTable(){
   cell = row.insertCell(row.cells.length);
   cell.appendChild(checkbox);
 
-  for (k in rec){
-    if(k == "id"){
+  for (key in tx){
+    if(key == "id"){
       continue;
     }
     cell = row.insertCell(row.cells.length);
-    cell.innerHTML = "" + k;
+    cell.innerHTML = "" + key;
     cell.bgColor = lightGrey;
   }
 
-  records.forEach(tableWriter(table));
+  txs.forEach(tableWriter(table));
   document.body.appendChild(table);
 }
 
@@ -90,11 +108,11 @@ function tableWriter(table){
            cell.id = "cbx_cell_" + row.id;
            cell.appendChild(checkbox);
 
-           for (var k in obj){
+           for(var k in obj){
              val = obj[k];
              if(k == "id"){
                continue;
-             } else if((k == "date" || k == "posted") && obj[k]){
+             }else if((k == "date" || k == "posted") && obj[k]){
                val = obj[k].split("T")[0];
              }
              cell = row.insertCell(row.cells.length);
@@ -104,9 +122,27 @@ function tableWriter(table){
              cell.addEventListener("mouseout", cell_mouse_out);
              cell.addEventListener("click", cell_mouse_click);
            }
-
            row.style.cursor = "pointer";
          }
+}
+
+function load_categories(){
+  var cats = categories();
+  var addDL = document.getElementById("addCategories");
+  var removeDL = document.getElementById("removeCategories");
+  var option;
+  [addDL, removeDL].forEach(x => insert_categories(x, cats));
+}
+
+function insert_categories(datalist, categories){
+  categories.forEach(x => insert_category(datalist, x));
+}
+
+function insert_category(datalist, category){
+  option = document.createElement("OPTION");
+  option.id = category['id'];
+  option.value = category['name'];
+  datalist.appendChild(option);
 }
 
 function get_val(Id){
@@ -116,7 +152,6 @@ function get_val(Id){
 
 function cell_mouse_over(event){
   var cell = event.target;
-  //console.log("cell_mouse_over(" + event.target + ")")
   if(!is_row_selected(cell)){
     cell.parentElement.style.backgroundColor = lightGrey;
   }
@@ -124,7 +159,6 @@ function cell_mouse_over(event){
 
 function cell_mouse_out(event){
   var cell = event.target;
-  //console.log("cell_mouse_out(" + event.target + ")")
   if(!is_row_selected(cell)){
     cell.parentElement.style.backgroundColor = white;
   }
@@ -132,7 +166,6 @@ function cell_mouse_out(event){
 
 function cell_mouse_click(event){
   var cell = event.target;
-  //console.log("cell_mouse_click(" + event.target + ")")
   if(is_row_selected(cell)){
     deselect_row_by_cell(cell);
   }else{
@@ -153,8 +186,6 @@ function cbx_mouse_over(event){
   event.preventDefault;
   var cbx = event.target;
   var parent = cbx.parentElement;
-  //console.log("Mouse over event target = " + cbx + " " + cbx.id);
-  //console.log("Mouse over event target parent = " + parent + " " + parent.id);
   row_mouse_over({'target': parent});
 }
 
@@ -162,36 +193,24 @@ function cbx_mouse_out(event){
   event.stopPropagation;
   var cbx = event.target;
   var parent = cbx.parentElement;
-  //console.log("Mouse out event target = " + cbx + " " + cbx.id);
-  //console.log("Mouse out event target parent = " + parent + " " + parent.id);
   row_mouse_out({'target': parent});
 }
 
 function is_row_selected(cell){
   var row = cell.parentElement;
-  var rowId = row.id;
-  //console.log("Is row " + rowId + "selected?");
-  isSelected = selectedRowIds.findIndex(x => x == rowId) != -1;
-  //console.log("Is row " + rowId + "selected? " + isSelected);
-  return isSelected;
+  return -1 != selectedRowIds.findIndex(x => x == row.id);
 }
 
 function is_any_row_selected(){
-  isAnySelected = -1 != Object.values(checkboxes).findIndex(e => e.checked);
-  //console.log("Is any selected: " + isAnySelected);
-  return isAnySelected;
+  return -1 != Object.values(checkboxes).findIndex(e => e.checked);
 }
 
 function select_row_by_cell(cell){
-  var row = cell.parentElement;
-  //console.log("select_row_by_cell(" + cell + ")");
-  //console.log("select_row_by_cell parent = " + row);
-  select_row_by_row(row);
+  select_row_by_row(cell.parentElement);
 }
 
 function select_row_by_row(row){
-  var rowId = row.id;
-  select_row(rowId);
+  select_row(row.id);
 }
 
 function select_row(rowId){
@@ -203,9 +222,7 @@ function select_row(rowId){
 }
 
 function deselect_row_by_cell(cell){
-  var row = cell.parentElement;
-  deselect_row(row.id);
-  //selectedRowIds = selectedRowIds.filter(x => x != rowId);
+  deselect_row(cell.parentElement.id);
 }
 
 function deselect_row(rowId){
@@ -220,12 +237,10 @@ function deselect_row(rowId){
 
 function all_or_none_click(event){
   if(is_any_row_selected()){
-    //console.log("Some row(s) is/are selected");
     Object.values(checkboxes).forEach(cbx => cbx.checked = false);
     event.target.checked = false;
     selectedRowIds.forEach(row => deselect_row(row));
   }else{
-    //console.log("No rows selected");
     Object.values(checkboxes).forEach(cbx => cbx.checked = true);
     event.target.checked = true;
     Object.values(rows).forEach(row => select_row_by_row(row));

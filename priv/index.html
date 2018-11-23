@@ -4,8 +4,8 @@
   </head>
   <script src="budget.js" language="JavaScript">
   </script>
-  <body>
-    <table>
+  <body onload="fetch_categories()">
+    <table style="font-size: 100%">
       <tr>
         <td>
           From:
@@ -23,7 +23,27 @@
         </td>
       </tr>
     </table>
-    <br>
-    <button display="query" text="query" onclick="q();">Query</button>
+    <button display="query"
+      text="query"
+      onclick="fetch_transactions();">
+      Fetch
+    </button>
+    </br>
+    <table style="font-size: 100%;">
+      <tr>
+        <td>
+          Add:
+          <input list="addCategories">
+          <datalist id="addCategories">
+          </datalist>
+        </td>
+        <td>
+          Remove:
+          <input list="removeCategories">
+          <datalist id="removeCategories">
+          </datalist>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
