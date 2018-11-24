@@ -10,6 +10,7 @@
 %% Custom callbacks.
 -export([budget_post/2]).
 -export([fetch/2]).
+-export([fix_dates/1]).
 
 init(Req, Opts) ->
 	{cowboy_rest, Req, Opts}.

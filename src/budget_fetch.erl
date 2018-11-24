@@ -4,20 +4,19 @@
 -export([fetch/5]).
 
 fetch(Sql, FieldNames, Params, Callback) ->
-    fetch(Sql, FieldNames, Params, Callback, fun identity/1).
+    fetch(Sql, FieldNames, Params, Callback, fun tuples_to_lists/1).
 
 fetch(Sql, FieldNames, Params, Callback, Transformer) ->
     {ok, Conn} = budget_db:connect(),
-    {ok, Cols, Records0} = budget_db:query(Conn, Sql, Params),
+    {ok, Cols, Records} = budget_db:query(Conn, Sql, Params),
     io:format(user, "Cols = ~p~n", [Cols]),
     budget_db:close(Conn),
-    Records1 = [Transformer(Rec) || Rec <- Records0],
-    Tuples = [lists:zip(FieldNames, tuple_to_list(Rec)) || Rec <- Records1],
+    Tuples = [lists:zip(FieldNames, Rec) || Rec <- Transformer(Records)],
     Json = jsx:encode(Tuples),
     Script = <<"function ",
              Callback/binary,
              "(){return ", Json/binary, ";};">>,
     Script.
 
-identity(X) ->
-    X.
+tuples_to_lists(Tuples) ->
+    [tuple_to_list(Tuple) || Tuple <- Tuples].
