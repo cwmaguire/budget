@@ -17,8 +17,7 @@ function fetch_transactions(){
   }
   var s = document.createElement("script");
   s.src = "http://localhost:8080/" +
-    "?type=transaction" +
-    "&callback=transactions" +
+    "?callback=transactions" +
     "&from=" + fromDate +
     "&to=" + toDate;
   s.id = scriptId;
@@ -31,16 +30,14 @@ function fetch_transactions(){
 }
 
 function fetch_categories(){
-  console.log("fetch_categories()");
   const scriptId = "categoriesScript";
   var oldScript = document.getElementById(scriptId);
   if(oldScript){
     oldScript.remove();
   }
   var s = document.createElement("script");
-  s.src = "http://localhost:8080/" +
-    "?type=category" +
-    "&callback=categories";
+  s.src = "http://localhost:8080/category" +
+    "?callback=categories";
   s.id = scriptId;
 
   s.onload = function() {

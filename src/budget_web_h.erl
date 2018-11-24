@@ -26,17 +26,6 @@ content_types_accepted(Req, State) ->
 	{[{{<<"application">>, <<"json">>, '*'}, budget_post}],
 		Req, State}.
 
-%resource_exists(Req, _State) ->
-%	case cowboy_req:binding(paste_id, Req) of
-%		undefined ->
-%			{true, Req, index};
-%		PasteID ->
-%			case valid_path(PasteID) and file_exists(PasteID) of
-%				true -> {true, Req, PasteID};
-%				false -> {false, Req, PasteID}
-%			end
-%	end.
-
 budget_post(Req, State) ->
 	case cowboy_req:method(Req) of
 		<<"POST">> ->
@@ -48,14 +37,7 @@ budget_post(Req, State) ->
 %budget_get(Req, #{from_date := From, to_date := To}) ->
 fetch(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
-    case lists:keyfind(<<"type">>, 1, QsVals) of
-        {_, <<"transaction">>} ->
-            fetch_transactions(QsVals, Req, State);
-        {_, <<"category">>} ->
-            fetch_categories(QsVals, Req, State);
-        _ ->
-            {<<>>, Req, State}
-    end.
+    fetch_transactions(QsVals, Req, State).
 
 fetch_transactions(QsVals, Req, State) ->
     {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
@@ -63,40 +45,21 @@ fetch_transactions(QsVals, Req, State) ->
     {_, RawTo} = lists:keyfind(<<"to">>, 1, QsVals),
     From = to_date(RawFrom),
     To = to_date(RawTo),
-    io:format("From date is ~p~n", [From]),
-    io:format("To date is ~p~n", [To]),
 
     FieldNames = [id, acct_type, acct_num, date, posted,
                   cheq_num, desc_1, desc_2, cad, usd],
     Sql = "select * "
           "from transaction "
           "where date between $1 and $2; ",
-    {ok, Conn} = budget_db:connect(),
-    {ok, _Cols, Txs} = budget_db:query(Conn, Sql, [From, To]),
-    Txs1 = fix_dates(Txs),
-    Tuples = [lists:zip(FieldNames, Tx) || Tx <- Txs1],
-    budget_db:close(Conn),
-    Json = jsx:encode(Tuples),
-    Script = <<"function ",
-             Callback/binary,
-             "(){return ", Json/binary, ";};">>,
-	{Script, Req, State}.
 
-fetch_categories(QsVals, Req, State) ->
-    QsVals = cowboy_req:parse_qs(Req),
-    {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
+    Params = [From, To],
 
-    FieldNames = [id, name],
-    Sql = "select id, name "
-          "from category; ",
-    {ok, Conn} = budget_db:connect(),
-    {ok, _Cols, Cats} = budget_db:query(Conn, Sql, []),
-    budget_db:close(Conn),
-    Tuples = [lists:zip(FieldNames, tuple_to_list(Cat)) || Cat <- Cats],
-    Json = jsx:encode(Tuples),
-    Script = <<"function ",
-             Callback/binary,
-             "(){return ", Json/binary, ";};">>,
+    Script = budget_fetch:fetch(Sql,
+                                FieldNames,
+                                Params,
+                                Callback,
+                                fun fix_dates/1),
+
 	{Script, Req, State}.
 
 to_date(List) ->

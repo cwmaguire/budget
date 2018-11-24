@@ -5,16 +5,18 @@
 %% API.
 -export([start/2]).
 -export([stop/1]).
+-export([etag/3]).
 
+-define(no_etag, [{etag, false}]).
 %% API.
 
 start(_Type, _Args) ->
 	Dispatch = cowboy_router:compile([
 		{'_', [
+			{"/category", budget_web_category_h, []},
 			{"/", budget_web_h, []},
-            {"/index.html", cowboy_static, {priv_file, budget, "index.html"}},
-            {"/budget.css", cowboy_static, {priv_file, budget, "budget.css"}},
-            {"/budget.js", cowboy_static, {priv_file, budget, "budget.js"}}
+            {"/assets/[...]", cowboy_static,
+             {priv_dir, budget, "static", [{etag, budget_app, etag}]}}
 		]}
 	]),
 	{ok, _} = cowboy:start_clear(http, [{port, 8080}], #{
@@ -24,3 +26,6 @@ start(_Type, _Args) ->
 
 stop(_State) ->
 	ok.
+
+etag(_, _, _) ->
+    {strong, integer_to_list(os:system_time())}.
