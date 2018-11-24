@@ -41,11 +41,10 @@ fetch_categories(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
     {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
 
-    FieldNames = [id, name],
     Sql = "select id, name "
           "from category "
           "order by lower(name); ",
 
-    Script = budget_fetch:fetch(Sql, FieldNames, [], Callback),
+    Script = budget_fetch:fetch(Sql, [], Callback),
 
     {Script, Req, State}.

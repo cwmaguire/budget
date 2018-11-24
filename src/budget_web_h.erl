@@ -47,8 +47,6 @@ fetch_transactions(QsVals, Req, State) ->
     From = to_date(RawFrom),
     To = to_date(RawTo),
 
-    FieldNames = [id, acct_type, acct_num, date, posted,
-                  cheq_num, desc_1, desc_2, cad, usd],
     Sql = "select * "
           "from transaction "
           "where date between $1 and $2; ",
@@ -56,7 +54,6 @@ fetch_transactions(QsVals, Req, State) ->
     Params = [From, To],
 
     Script = budget_fetch:fetch(Sql,
-                                FieldNames,
                                 Params,
                                 Callback,
                                 fun fix_dates/1),
