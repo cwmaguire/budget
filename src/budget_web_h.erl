@@ -47,9 +47,25 @@ fetch_transactions(QsVals, Req, State) ->
     From = to_date(RawFrom),
     To = to_date(RawTo),
 
-    Sql = "select * "
-          "from transaction "
-          "where date between $1 and $2; ",
+    Fields = "t.id, "
+             "t.acct_type, "
+             "t.acct_num, "
+             "t.date, "
+             "t.posted, "
+             "t.cheq_num, "
+             "t.desc_1, "
+             "t.desc_2, "
+             "t.cad, "
+             "t.usd ",
+
+    Sql = "select t.*, string_agg(c.name, ', ') categories "
+          "from transaction t "
+          "left join transaction_category tc "
+          "  on t.id = tc.tx_id "
+          "left join category c "
+          "  on tc.cat_id = c.id "
+          "where date between $1 and $2 "
+          "group by " ++ Fields ++ "; ",
 
     Params = [From, To],
 
