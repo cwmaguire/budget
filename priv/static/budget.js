@@ -6,6 +6,7 @@ const amp = "&";
 var selectedRowIds = [];
 var checkboxes = {};
 var rows = {};
+var cats;
 
 function fetch_transactions(){
   const scriptId = "transactionsScript";
@@ -40,9 +41,10 @@ function fetch_categories(){
     "?callback=categories";
   s.id = scriptId;
 
-  s.onload = function() {
-    load_categories();
-  };
+  // TODO maybe enable the page when this is loaded?
+  //s.onload = function() {
+    //cats = categories();
+  //};
 
   document.body.appendChild(s);
 }
@@ -64,27 +66,33 @@ function load_transactions(){
   table.className = "table";
 
   var header = table.createTHead();
-  var row = header.insertRow(0);
+  var headerRow = header.insertRow(0);
   var cell;
   var tx = txs[0];
 
-  var checkbox = document.createElement("INPUT");
-  checkbox.setAttribute("type", "checkbox");
-  checkbox.id = "allOrNone";
-  checkbox.addEventListener("click", all_or_none_click);
-  cell = row.insertCell(row.cells.length);
-  cell.appendChild(checkbox);
+  var selectCheckbox = document.createElement("INPUT");
+  selectCheckbox.setAttribute("type", "checkbox");
+  selectCheckbox.id = "allOrNone";
+  selectCheckbox.addEventListener("click", all_or_none_click);
+
+  cell = headerRow.insertCell(headerRow.cells.length);
+  cell.appendChild(selectCheckbox);
 
   for (key in tx){
     if(key == "id"){
       continue;
     }
-    cell = row.insertCell(row.cells.length);
+    cell = headerRow.insertCell(headerRow.cells.length);
     cell.innerHTML = "" + key;
     cell.bgColor = lightGrey;
   }
 
+  cell = headerRow.insertCell(headerRow.cells.length);
+  cell.innerHTML = "add category";
+  cell.bgColor = lightGrey;
+
   txs.forEach(tableWriter(table));
+
   document.body.appendChild(table);
 }
 
@@ -119,25 +127,36 @@ function tableWriter(table){
              cell.addEventListener("mouseout", cell_mouse_out);
              cell.addEventListener("click", cell_mouse_click);
            }
+
+           var datalistId = "cat_dl_" + row.id;
+
+           var categoryDatalist = document.createElement("DATALIST");
+           categoryDatalist.id = datalistId;
+           add_categories_to_datalist(categoryDatalist);
+
+           var categoryInput = document.createElement("INPUT");
+           categoryInput.id = "cat_input_" + row.id;
+           categoryInput.setAttribute('list', datalistId);
+           categoryInput.addEventListener("input", cat_input_input);
+
+           cell = row.insertCell(row.cells.length);
+           cell.id = "cat_dl_cell_" + row.id;
+           cell.appendChild(categoryInput);
+           cell.appendChild(categoryDatalist);
+
            row.style.cursor = "pointer";
          }
 }
 
-function load_categories(){
-  var cats = categories();
-  var addDL = document.getElementById("addCategories");
-  var removeDL = document.getElementById("removeCategories");
-  var option;
-  [addDL, removeDL].forEach(x => insert_categories(x, cats));
-}
-
-function insert_categories(datalist, categories){
-  categories.forEach(x => insert_category(datalist, x));
+function add_categories_to_datalist(datalist){
+  //console.log("Adding " + categories().length + " categories to datalist " + datalist.id);
+  categories().forEach(x => insert_category(datalist, x));
 }
 
 function insert_category(datalist, category){
-  option = document.createElement("OPTION");
-  option.id = category['id'];
+  //console.log("Adding category " + category.name + " to datalist " + datalist.id);
+  var option = document.createElement("OPTION");
+  option.id = datalist.id + "_option_cat_" + category['id'];
   option.value = category['name'];
   datalist.appendChild(option);
 }
@@ -242,6 +261,11 @@ function all_or_none_click(event){
     event.target.checked = true;
     Object.values(rows).forEach(row => select_row_by_row(row));
   }
+}
+
+function cat_input_input(event){
+  console.log("Selected something in " + event.target.value);
+
 }
 
 function getById(Id){
