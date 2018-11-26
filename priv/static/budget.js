@@ -1,3 +1,4 @@
+"use strict";
 const white = "#" + "FFFFFF";
 const lightGrey = "#" + "D0D0D0";
 const lightBlue = "#" + "B0B0D0";
@@ -78,7 +79,7 @@ function load_transactions(){
   cell = headerRow.insertCell(headerRow.cells.length);
   cell.appendChild(selectCheckbox);
 
-  for (key in tx){
+  for (let key in tx){
     if(key == "id"){
       continue;
     }
@@ -98,13 +99,13 @@ function load_transactions(){
 
 function tableWriter(table){
   return function(obj){
-           var row = table.insertRow();
+           let row = table.insertRow();
            row.id = obj.id;
            rows[row.id] = row;
-           var cell;
-           var val;
+           let cell;
+           let val;
 
-           var checkbox = document.createElement("INPUT");
+           let checkbox = document.createElement("INPUT");
            checkbox.setAttribute("type", "checkbox");
            checkbox.id = "cbx" + row.id;
            checkboxes[row.id] = checkbox;
@@ -128,21 +129,27 @@ function tableWriter(table){
              cell.addEventListener("click", cell_mouse_click);
            }
 
-           var datalistId = "cat_dl_" + row.id;
+           let datalistId = "cat_dl_" + row.id;
 
-           var categoryDatalist = document.createElement("DATALIST");
+           let categoryDatalist = document.createElement("DATALIST");
            categoryDatalist.id = datalistId;
            add_categories_to_datalist(categoryDatalist);
 
-           var categoryInput = document.createElement("INPUT");
+           let categoryInput = document.createElement("INPUT");
            categoryInput.id = "cat_input_" + row.id;
            categoryInput.setAttribute('list', datalistId);
-           categoryInput.addEventListener("input", cat_input_input);
+
+           let categoryButton = document.createElement("INPUT");
+           categoryButton.id = "cat_add_button_" + row.id;
+           categoryButton.value = "+";
+           categoryButton.type = "button";
+           categoryButton.addEventListener("click", cat_add_click);
 
            cell = row.insertCell(row.cells.length);
            cell.id = "cat_dl_cell_" + row.id;
            cell.appendChild(categoryInput);
            cell.appendChild(categoryDatalist);
+           cell.appendChild(categoryButton);
 
            row.style.cursor = "pointer";
          }
@@ -263,11 +270,40 @@ function all_or_none_click(event){
   }
 }
 
-function cat_input_input(event){
-  console.log("Selected something in " + event.target.value);
-
+function cat_add_click(event){
+  let rowId = event.target.id.split("_")[3];
+  let value = document.getElementById("cat_input_" + rowId).value;
+  let categoryId = categoryIdByValue(categories(), value);
+  if(-1 != categoryId){
+    console.log("Category ID = " + categoryId);
+  }else{
+    console.log("No category ID");
+  }
 }
 
 function getById(Id){
   return document.getElementById(Id);
+}
+
+function categoryIdByValue(categories, value){
+  let iterator = categories.entries();
+  let key = "name";
+  let entry = iteratorFindFirst(iterator, key, value);
+  if(entry == -1){
+    return -1;
+  }else{
+    return entry[0];
+  }
+}
+
+function iteratorFindFirst(iterator, key, value){
+  let n = iterator.next();
+  do {
+    if(n.value[1][key] === value){
+      return n.value;
+    }else{
+      n = iterator.next();
+    }
+  } while(!n.done);
+  return -1;
 }
