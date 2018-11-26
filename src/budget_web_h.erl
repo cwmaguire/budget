@@ -69,7 +69,7 @@ fetch_transactions(QsVals, Req, State) ->
 
     Params = [From, To],
 
-    Script = budget_fetch:fetch(Sql,
+    Script = budget_query:fetch(Sql,
                                 Params,
                                 Callback,
                                 fun fix_dates/1),

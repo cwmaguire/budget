@@ -276,6 +276,7 @@ function cat_add_click(event){
   let categoryId = categoryIdByValue(categories(), value);
   if(-1 != categoryId){
     console.log("Category ID = " + categoryId);
+    post("category", "tx=" + rowId + "&cat=" + categoryId);
   }else{
     console.log("No category ID");
   }
@@ -288,7 +289,7 @@ function getById(Id){
 function categoryIdByValue(categories, value){
   let iterator = categories.entries();
   let key = "name";
-  let entry = iteratorFindFirst(iterator, key, value);
+  let entry = iterator_find_first(iterator, key, value);
   if(entry == -1){
     return -1;
   }else{
@@ -296,7 +297,7 @@ function categoryIdByValue(categories, value){
   }
 }
 
-function iteratorFindFirst(iterator, key, value){
+function iterator_find_first(iterator, key, value){
   let n = iterator.next();
   do {
     if(n.value[1][key] === value){
@@ -307,3 +308,44 @@ function iteratorFindFirst(iterator, key, value){
   } while(!n.done);
   return -1;
 }
+
+function add_category(){
+
+}
+
+function post(restPath, postKVs){
+  var xhr = new XMLHttpRequest();
+
+  console.log("Calling post with postKVs: " + postKVs);
+  xhr.addEventListener("progress", updateProgress);
+  xhr.addEventListener("load", transferComplete);
+  xhr.addEventListener("error", transferFailed);
+  xhr.addEventListener("abort", transferCanceled);
+  xhr.open("POST", "http://localhost:8080/" + restPath, true);
+  xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+  xhr.send(postKVs);
+}
+
+// progress on transfers from the server to the client (downloads)
+function updateProgress (oEvent) {
+  if (oEvent.lengthComputable) {
+    var percentComplete = oEvent.loaded / oEvent.total * 100;
+    console.log("update progress");
+  } else {
+    // Unable to compute progress information since the total size is unknown
+    console.log("update progress: total size unknown");
+  }
+}
+
+function transferComplete(evt) {
+  console.log("The transfer is complete.");
+}
+
+function transferFailed(evt) {
+  console.log("An error occurred while transferring the file.");
+}
+
+function transferCanceled(evt) {
+  console.log("The transfer has been canceled by the user.");
+}
+

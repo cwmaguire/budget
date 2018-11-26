@@ -1,7 +1,8 @@
--module(budget_fetch).
+-module(budget_query).
 
 -export([fetch/3]).
 -export([fetch/4]).
+-export([update/2]).
 
 fetch(Sql, Params, Callback) ->
     fetch(Sql, Params, Callback, fun tuples_to_lists/1).
@@ -21,3 +22,11 @@ fetch(Sql, Params, Callback, Transformer) ->
 
 tuples_to_lists(Tuples) ->
     [tuple_to_list(Tuple) || Tuple <- Tuples].
+
+update(Sql, Params) ->
+    io:format("Calling update with Params: ~p~n", [Params]),
+    {ok, Conn} = budget_db:connect(),
+    {ok, NumUpdated} = budget_db:query(Conn, Sql, Params),
+    budget_db:close(Conn),
+    NumUpdated.
+
