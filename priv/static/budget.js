@@ -92,12 +92,12 @@ function load_transactions(){
   cell.innerHTML = "add category";
   cell.bgColor = lightGrey;
 
-  txs.forEach(tableWriter(table));
+  txs.forEach(table_writer(table));
 
   document.body.appendChild(table);
 }
 
-function tableWriter(table){
+function table_writer(table){
   return function(obj){
            let row = table.insertRow();
            row.id = obj.id;
@@ -273,7 +273,7 @@ function all_or_none_click(event){
 function cat_add_click(event){
   let rowId = event.target.id.split("_")[3];
   let value = document.getElementById("cat_input_" + rowId).value;
-  let categoryId = categoryIdByValue(categories(), value);
+  let categoryId = category_id_by_value(categories(), value);
   if(-1 != categoryId){
     console.log("Category ID = " + categoryId);
     post("category", "tx=" + rowId + "&cat=" + categoryId);
@@ -286,14 +286,14 @@ function getById(Id){
   return document.getElementById(Id);
 }
 
-function categoryIdByValue(categories, value){
+function category_id_by_value(categories, value){
   let iterator = categories.entries();
   let key = "name";
   let entry = iterator_find_first(iterator, key, value);
   if(entry == -1){
     return -1;
   }else{
-    return entry[0];
+    return entry[1].id;
   }
 }
 
@@ -317,17 +317,17 @@ function post(restPath, postKVs){
   var xhr = new XMLHttpRequest();
 
   console.log("Calling post with postKVs: " + postKVs);
-  xhr.addEventListener("progress", updateProgress);
-  xhr.addEventListener("load", transferComplete);
-  xhr.addEventListener("error", transferFailed);
-  xhr.addEventListener("abort", transferCanceled);
+  xhr.addEventListener("progress", update_progress);
+  xhr.addEventListener("load", transfer_complete);
+  xhr.addEventListener("error", transfer_failed);
+  xhr.addEventListener("abort", transfer_canceled);
   xhr.open("POST", "http://localhost:8080/" + restPath, true);
   xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
   xhr.send(postKVs);
 }
 
 // progress on transfers from the server to the client (downloads)
-function updateProgress (oEvent) {
+function update_progress (oEvent) {
   if (oEvent.lengthComputable) {
     var percentComplete = oEvent.loaded / oEvent.total * 100;
     console.log("update progress");
@@ -337,15 +337,15 @@ function updateProgress (oEvent) {
   }
 }
 
-function transferComplete(evt) {
+function transfer_complete(evt) {
   console.log("The transfer is complete.");
 }
 
-function transferFailed(evt) {
+function transfer_failed(evt) {
   console.log("An error occurred while transferring the file.");
 }
 
-function transferCanceled(evt) {
+function transfer_canceled(evt) {
   console.log("The transfer has been canceled by the user.");
 }
 
