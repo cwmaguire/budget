@@ -239,7 +239,7 @@ function select_row_by_row(row){
 function select_row(rowId){
   selectedRowIds.push(rowId);
   checkboxes[rowId].checked = true;
-  row = document.getElementById(rowId);
+  let row = document.getElementById(rowId);
   row.style.backgroundColor = lightBlue;
   document.getElementById("allOrNone").checked = true;
 }
@@ -251,7 +251,7 @@ function deselect_row_by_cell(cell){
 function deselect_row(rowId){
   selectedRowIds = selectedRowIds.filter(selRowId => selRowId != rowId);
   checkboxes[rowId].checked = false;
-  row = document.getElementById(rowId);
+  let row = document.getElementById(rowId);
   row.style.backgroundColor = white;
   if(!is_any_row_selected()){
     document.getElementById("allOrNone").checked = false;

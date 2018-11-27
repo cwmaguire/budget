@@ -65,7 +65,6 @@ fetch_categories(Req, State) ->
 category_add(Req, State) ->
     {ok, Body, Req1} = cowboy_req:read_body(Req),
     KVs = kvs(Body),
-    io:format(user, "Body = ~p~n", [Body]),
     Tx = list_to_integer(proplists:get_value("tx", KVs)),
     Cat = list_to_integer(proplists:get_value("cat", KVs)),
     Sql = "insert into transaction_category "
@@ -82,13 +81,11 @@ category_add(Req, State) ->
 
 kvs(Binary) ->
     Bins = binary:split(Binary, [<<"&">>, <<"=">>], [global]),
-    io:format(user, "Bins = ~p~n", [Bins]),
     kvs(Bins, []).
 
 kvs([KBin, VBin | Rest], KVs) ->
     K = binary_to_list(KBin),
     V = binary_to_list(VBin),
-    io:format("KV: {~p, ~p}~n", [K, V]),
     kvs(Rest, [{K, V} | KVs]);
 kvs(_, KVs) ->
     KVs.
