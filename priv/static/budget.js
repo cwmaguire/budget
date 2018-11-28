@@ -104,6 +104,8 @@ function table_writer(table){
            rows[row.id] = row;
            let cell;
            let val;
+           let categories;
+           let categorySpans;
 
            let checkbox = document.createElement("INPUT");
            checkbox.setAttribute("type", "checkbox");
@@ -117,6 +119,25 @@ function table_writer(table){
            for(var k in obj){
              val = obj[k];
              if(k == "id"){
+               continue;
+             }else if(k == "categories"){
+               categorySpans = [];
+               if(obj[k]){
+                 console.log("obj[k] = " + obj[k]);
+                 categories = obj[k].split(", ");
+                 categories.forEach(
+                   function(cat){
+                     categorySpans.push(cat_span(cat))
+                   }
+                 );
+               }
+               cell = row.insertCell(row.cells.length);
+               cell.id = "cell_" + k + "_" + row.id;
+               categorySpans.forEach(
+                 function(span){
+                   cell.appendChild(span);
+                 }
+               );
                continue;
              }else if((k == "date" || k == "posted") && obj[k]){
                val = obj[k].split("T")[0];
@@ -403,3 +424,11 @@ function transfer_canceled(evt) {
   console.log("The transfer has been canceled by the user.");
 }
 
+function cat_span(cat){
+  let span = document.createElement("SPAN");
+  span.innerHTML = cat;
+  span.style.borderWidth = "1px";
+  span.style.borderStyle = "solid";
+  span.style.borderColor = "black";
+  return span;
+}
