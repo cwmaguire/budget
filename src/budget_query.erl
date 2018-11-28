@@ -1,5 +1,6 @@
 -module(budget_query).
 
+-export([fetch_value/2]).
 -export([fetch/3]).
 -export([fetch/4]).
 -export([update/2]).
@@ -19,6 +20,13 @@ fetch(Sql, Params, Callback, Transformer) ->
              Callback/binary,
              "(){return ", Json/binary, ";};">>,
     Script.
+
+fetch_value(Sql, Params) ->
+    {ok, Conn} = budget_db:connect(),
+    {ok, _Cols, [Record | _]} = budget_db:query(Conn, Sql, Params),
+    budget_db:close(Conn),
+    [Value | _] = tuple_to_list(Record),
+    Value.
 
 tuples_to_lists(Tuples) ->
     [tuple_to_list(Tuple) || Tuple <- Tuples].

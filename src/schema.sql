@@ -21,6 +21,8 @@ create table transaction_category(
   tx_id numeric references transaction(id),
   cat_id int references category(id));
 
+create unique index on transaction_category(tx_id, cat_id);
+
 create table category_rule(
   id serial primary key,
   match varchar,

@@ -48,7 +48,13 @@ category_post(Req, State) ->
     end.
 
 category_get(Req, State) ->
-    fetch_categories(Req, State).
+    QsVals = cowboy_req:parse_qs(Req),
+    case lists:keyfind(<<"tx">>, 1, QsVals) of
+        {_, Tx} ->
+            fetch_categories_by_tx(Tx, Req, State);
+        false ->
+            fetch_categories(Req, State)
+    end.
 
 fetch_categories(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
@@ -62,6 +68,27 @@ fetch_categories(Req, State) ->
 
     {Script, Req, State}.
 
+fetch_categories_by_tx(Tx, Req, State) ->
+    io:format("fetch_categories_by_tx with tx: ~p~n", [Tx]),
+    Sql = "select string_agg(c.name, ', ') categories "
+          "from transaction_category tc "
+          "inner join category c "
+          "  on tc.cat_id = c.id "
+          "where tc.tx_id = $1; ",
+
+    Categories = budget_query:fetch_value(Sql, [b2i(Tx)]),
+    Value = case Categories of
+                null ->
+                    io:format("No categories for tx ~p~n", [Tx]),
+                    "";
+                _ ->
+                    io:format("Categories for tx ~p ~p~n", [b2i(Tx), Categories]),
+                    Categories
+            end,
+    io:format(user, "Value = ~p~n", [Value]),
+
+    {Value, Req, State}.
+
 category_add(Req, State) ->
     {ok, Body, Req1} = cowboy_req:read_body(Req),
     KVs = kvs(Body),
@@ -69,8 +96,12 @@ category_add(Req, State) ->
     Cat = list_to_integer(proplists:get_value("cat", KVs)),
     Sql = "insert into transaction_category "
           "(tx_id, cat_id) "
-          "values "
-          "($1, $2);",
+          "select $1, $2 "
+          "where not exists "
+          "(select null "
+          " from transaction_category "
+          " where tx_id = $1 "
+          " and cat_id = $2); ",
     Return = budget_query:update(Sql, [Tx, Cat]),
     case Return of
         Count when Count > 0 ->
@@ -89,3 +120,6 @@ kvs([KBin, VBin | Rest], KVs) ->
     kvs(Rest, [{K, V} | KVs]);
 kvs(_, KVs) ->
     KVs.
+
+b2i(Bin) ->
+    list_to_integer(binary_to_list(Bin)).

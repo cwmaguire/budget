@@ -11,7 +11,7 @@ var cats;
 
 function fetch_transactions(){
   const scriptId = "transactionsScript";
-  var oldScript = document.getElementById(scriptId);
+  var oldScript = elem_by_id(scriptId);
   var fromDate = get_val("fromDateText");
   var toDate = get_val("toDateText");
   if(oldScript){
@@ -33,7 +33,7 @@ function fetch_transactions(){
 
 function fetch_categories(){
   const scriptId = "categoriesScript";
-  var oldScript = document.getElementById(scriptId);
+  var oldScript = elem_by_id(scriptId);
   if(oldScript){
     oldScript.remove();
   }
@@ -58,7 +58,7 @@ function load_transactions(){
 
   checkboxes = {};
 
-  var oldTable = document.getElementById("table1");
+  var oldTable = elem_by_id("table1");
   if(oldTable){
     oldTable.remove();
   }
@@ -169,7 +169,7 @@ function insert_category(datalist, category){
 }
 
 function get_val(Id){
-  var element = document.getElementById(Id);
+  var element = elem_by_id(Id);
   return element.value;
 }
 
@@ -239,9 +239,9 @@ function select_row_by_row(row){
 function select_row(rowId){
   selectedRowIds.push(rowId);
   checkboxes[rowId].checked = true;
-  let row = document.getElementById(rowId);
+  let row = elem_by_id(rowId);
   row.style.backgroundColor = lightBlue;
-  document.getElementById("allOrNone").checked = true;
+  elem_by_id("allOrNone").checked = true;
 }
 
 function deselect_row_by_cell(cell){
@@ -251,10 +251,10 @@ function deselect_row_by_cell(cell){
 function deselect_row(rowId){
   selectedRowIds = selectedRowIds.filter(selRowId => selRowId != rowId);
   checkboxes[rowId].checked = false;
-  let row = document.getElementById(rowId);
+  let row = elem_by_id(rowId);
   row.style.backgroundColor = white;
   if(!is_any_row_selected()){
-    document.getElementById("allOrNone").checked = false;
+    elem_by_id("allOrNone").checked = false;
   }
 }
 
@@ -272,17 +272,33 @@ function all_or_none_click(event){
 
 function cat_add_click(event){
   let rowId = event.target.id.split("_")[3];
-  let value = document.getElementById("cat_input_" + rowId).value;
+  let input = elem_by_id("cat_input_" + rowId);
+  let value = input.value;
   let categoryId = category_id_by_value(categories(), value);
   if(-1 != categoryId){
     console.log("Category ID = " + categoryId);
-    post("category", "tx=" + rowId + "&cat=" + categoryId);
-  }else{
-    console.log("No category ID");
+    let result = http_post("category",
+                           "tx=" + rowId + "&cat=" + categoryId,
+                           function (){ reset_categories(rowId) });
+    console.log("category post result: " + result);
+    reset_categories(rowId);
   }
+  input.value = "";
 }
 
-function getById(Id){
+function reset_categories(rowId){
+  let cell = elem_by_id("cell_categories_" + rowId);
+  http_get("category?tx=" + rowId,
+           function (text){
+             update_cell(cell, text);
+           });
+}
+
+function update_cell(cell, text){
+  cell.innerHTML = text;
+}
+
+function elem_by_id(Id){
   return document.getElementById(Id);
 }
 
@@ -313,17 +329,55 @@ function add_category(){
 
 }
 
-function post(restPath, postKVs){
+function http_post(restPath, postKVs, callback){
   var xhr = new XMLHttpRequest();
 
-  console.log("Calling post with postKVs: " + postKVs);
+  console.log("Calling http_post with postKVs: " + postKVs);
   xhr.addEventListener("progress", update_progress);
   xhr.addEventListener("load", transfer_complete);
   xhr.addEventListener("error", transfer_failed);
   xhr.addEventListener("abort", transfer_canceled);
+  xhr.addEventListener("readystatechange", http_ready_state_change_event_handler(xhr, callback));
   xhr.open("POST", "http://localhost:8080/" + restPath, true);
   xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
   xhr.send(postKVs);
+  console.log("xhr.responseText = " + xhr.responseText);
+  console.log("xhr.response = " + xhr.response);
+}
+
+function http_post_ready_state_change_event_handler(xhr, callback){
+  let handler = function http_get_ready_state_change(event){
+    if(xhr.readyState == 4){
+      console.log("ready state == 4: xhr.responseText = " + xhr.responseText);
+      console.log("ready state == 4: xhr.response = " + xhr.response);
+      callback(xhr.responseText);
+    }
+  }
+  return handler;
+}
+
+function http_get(restPath, callback){
+  var xhr = new XMLHttpRequest();
+
+  console.log("Calling get with restPath: " + restPath);
+  xhr.addEventListener("progress", update_progress);
+  xhr.addEventListener("load", transfer_complete);
+  xhr.addEventListener("error", transfer_failed);
+  xhr.addEventListener("abort", transfer_canceled);
+  xhr.addEventListener("readystatechange", http_ready_state_change_event_handler(xhr, callback));
+  xhr.open("GET", "http://localhost:8080/" + restPath, true);
+  xhr.send();
+}
+
+function http_ready_state_change_event_handler(xhr, callback){
+  let handler = function http_get_ready_state_change(event){
+    if(xhr.readyState == 4){
+      console.log("xhr.responseText = " + xhr.responseText);
+      console.log("xhr.response = " + xhr.response);
+      callback(xhr.responseText);
+    }
+  }
+  return handler;
 }
 
 // progress on transfers from the server to the client (downloads)
