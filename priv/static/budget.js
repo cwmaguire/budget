@@ -427,8 +427,13 @@ function transfer_canceled(evt) {
 function cat_span(cat){
   let span = document.createElement("SPAN");
   span.innerHTML = cat;
-  span.style.borderWidth = "1px";
-  span.style.borderStyle = "solid";
-  span.style.borderColor = "black";
+  span.classList.add("category");
+  span.addEventListener("click", category_click);
   return span;
+}
+
+function category_click(event){
+  let catSpan = element.target;
+  // TODO implement html_delete and pass proper ID
+  html_delete(catSpan.id);
 }
