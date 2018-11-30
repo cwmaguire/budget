@@ -12,7 +12,7 @@ fetch(Sql, Params, Callback, Transformer) ->
     {ok, Conn} = budget_db:connect(),
     {ok, Cols, Records} = budget_db:query(Conn, Sql, Params),
     ColNames = [Name || {column, Name, _, _, _, _, _} <- Cols],
-    io:format(user, "Cols = ~p~n", [Cols]),
+    %io:format(user, "Cols = ~p~n", [Cols]),
     budget_db:close(Conn),
     Tuples = [lists:zip(ColNames, Rec) || Rec <- Transformer(Records)],
     Json = jsx:encode(Tuples),

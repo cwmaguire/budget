@@ -1,14 +1,25 @@
 "use strict";
+// TODO I think I can remove these now that I have the JS in its own file
+// I think it was just the HTML filetype in Vim that struggled with HTML
+// and JS combined.
 const white = "#" + "FFFFFF";
 const lightGrey = "#" + "D0D0D0";
 const lightBlue = "#" + "B0B0D0";
 const amp = "&";
+
+// TODO flag automatic vs. manual categories
+// It would be nice to know which categories I added and which categories
+// were added by rules.
+
+// TODO Add notes
+// It's helpful to know a little more detail about obscure transactions
 
 var selectedRowIds = [];
 var checkboxes = {};
 var rows = {};
 var cats;
 
+// fetch button onclick handler
 function fetch_transactions(){
   const scriptId = "transactionsScript";
   var oldScript = elem_by_id(scriptId);
@@ -31,6 +42,7 @@ function fetch_transactions(){
   document.body.appendChild(s);
 }
 
+// body.onload handler
 function fetch_categories(){
   const scriptId = "categoriesScript";
   var oldScript = elem_by_id(scriptId);
@@ -104,7 +116,7 @@ function table_writer(table){
            rows[row.id] = row;
            let cell;
            let val;
-           let categories;
+           let cats;
            let categorySpans;
 
            let checkbox = document.createElement("INPUT");
@@ -123,9 +135,9 @@ function table_writer(table){
              }else if(k == "categories"){
                categorySpans = [];
                if(obj[k]){
-                 console.log("obj[k] = " + obj[k]);
-                 categories = obj[k].split(", ");
-                 categories.forEach(
+                 //console.log("obj[k] = " + obj[k]);
+                 cats = obj[k].split(", ");
+                 cats.forEach(
                    function(cat){
                      categorySpans.push(cat_span(cat))
                    }
@@ -297,11 +309,11 @@ function cat_add_click(event){
   let value = input.value;
   let categoryId = category_id_by_value(categories(), value);
   if(-1 != categoryId){
-    console.log("Category ID = " + categoryId);
+    //console.log("Category ID = " + categoryId);
     let result = http_post("category",
                            "tx=" + rowId + "&cat=" + categoryId,
                            function (){ reset_categories(rowId) });
-    console.log("category post result: " + result);
+    //console.log("category post result: " + result);
     reset_categories(rowId);
   }
   input.value = "";
@@ -316,15 +328,27 @@ function reset_categories(rowId){
 }
 
 function update_cell(cell, text){
-  cell.innerHTML = text;
+  let categorySpans = [];
+
+  for(let i = 0; i < cell.children.length; i++){
+    cell.firstElementChild.remove();
+  }
+
+  let cats = text.split(", ");
+
+  cats.forEach(
+    function(cat){
+      cell.appendChild(cat_span(cat))
+    }
+  );
 }
 
 function elem_by_id(Id){
   return document.getElementById(Id);
 }
 
-function category_id_by_value(categories, value){
-  let iterator = categories.entries();
+function category_id_by_value(cats, value){
+  let iterator = cats.entries();
   let key = "name";
   let entry = iterator_find_first(iterator, key, value);
   if(entry == -1){
@@ -353,7 +377,7 @@ function add_category(){
 function http_post(restPath, postKVs, callback){
   var xhr = new XMLHttpRequest();
 
-  console.log("Calling http_post with postKVs: " + postKVs);
+  //console.log("Calling http_post with postKVs: " + postKVs);
   xhr.addEventListener("progress", update_progress);
   xhr.addEventListener("load", transfer_complete);
   xhr.addEventListener("error", transfer_failed);
@@ -362,15 +386,15 @@ function http_post(restPath, postKVs, callback){
   xhr.open("POST", "http://localhost:8080/" + restPath, true);
   xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
   xhr.send(postKVs);
-  console.log("xhr.responseText = " + xhr.responseText);
-  console.log("xhr.response = " + xhr.response);
+  //console.log("xhr.responseText = " + xhr.responseText);
+  //console.log("xhr.response = " + xhr.response);
 }
 
 function http_post_ready_state_change_event_handler(xhr, callback){
   let handler = function http_get_ready_state_change(event){
     if(xhr.readyState == 4){
-      console.log("ready state == 4: xhr.responseText = " + xhr.responseText);
-      console.log("ready state == 4: xhr.response = " + xhr.response);
+      //console.log("ready state == 4: xhr.responseText = " + xhr.responseText);
+      //console.log("ready state == 4: xhr.response = " + xhr.response);
       callback(xhr.responseText);
     }
   }
@@ -380,7 +404,7 @@ function http_post_ready_state_change_event_handler(xhr, callback){
 function http_get(restPath, callback){
   var xhr = new XMLHttpRequest();
 
-  console.log("Calling get with restPath: " + restPath);
+  //console.log("Calling http_get with restPath: " + restPath);
   xhr.addEventListener("progress", update_progress);
   xhr.addEventListener("load", transfer_complete);
   xhr.addEventListener("error", transfer_failed);
@@ -390,11 +414,27 @@ function http_get(restPath, callback){
   xhr.send();
 }
 
+function http_delete(restPath, callback){
+  var xhr = new XMLHttpRequest();
+
+  //console.log("Calling http_delete with restPath: " + restPath);
+  xhr.addEventListener("progress", update_progress);
+  xhr.addEventListener("load", transfer_complete);
+  xhr.addEventListener("error", transfer_failed);
+  xhr.addEventListener("abort", transfer_canceled);
+  xhr.addEventListener("readystatechange", http_ready_state_change_event_handler(xhr, callback));
+  xhr.open("DELETE", "http://localhost:8080/" + restPath, true);
+  xhr.send();
+}
+
 function http_ready_state_change_event_handler(xhr, callback){
   let handler = function http_get_ready_state_change(event){
-    if(xhr.readyState == 4){
-      console.log("xhr.responseText = " + xhr.responseText);
-      console.log("xhr.response = " + xhr.response);
+    //console.log("xhr.status = " + xhr.status);
+    //console.log("xhr.statusText = " + xhr.statusText);
+    if(xhr.readyState == 4 && xhr.status < 300){
+      //console.log("xhr.readyState = " + xhr.readyState);
+      //console.log("xhr.responseText = " + xhr.responseText);
+      //console.log("xhr.response = " + xhr.response);
       callback(xhr.responseText);
     }
   }
@@ -405,15 +445,15 @@ function http_ready_state_change_event_handler(xhr, callback){
 function update_progress (oEvent) {
   if (oEvent.lengthComputable) {
     var percentComplete = oEvent.loaded / oEvent.total * 100;
-    console.log("update progress");
+    //console.log("update progress");
   } else {
     // Unable to compute progress information since the total size is unknown
-    console.log("update progress: total size unknown");
+    //console.log("update progress: total size unknown");
   }
 }
 
 function transfer_complete(evt) {
-  console.log("The transfer is complete.");
+  //console.log("The transfer is complete.");
 }
 
 function transfer_failed(evt) {
@@ -426,14 +466,21 @@ function transfer_canceled(evt) {
 
 function cat_span(cat){
   let span = document.createElement("SPAN");
-  span.innerHTML = cat;
+  let descAndId = cat.split("||");
+  //console.log("cat: " + cat + ", descAndId: " + descAndId);
+  span.innerHTML = descAndId[0];
+  span.id = descAndId[1];
   span.classList.add("category");
   span.addEventListener("click", category_click);
   return span;
 }
 
 function category_click(event){
-  let catSpan = element.target;
-  // TODO implement html_delete and pass proper ID
-  html_delete(catSpan.id);
+  let catSpan = event.target;
+  //console.log("Cat span ID: " + catSpan.id);
+  //console.log("Cat span text: " + catSpan.innerHTML);
+  http_delete("category/" + catSpan.id,
+              function(){
+                elem_by_id(catSpan.id).remove()
+              });
 }

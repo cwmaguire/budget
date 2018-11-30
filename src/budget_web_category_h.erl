@@ -5,7 +5,8 @@
 -export([allowed_methods/2]).
 -export([content_types_provided/2]).
 -export([content_types_accepted/2]).
-%-export([resource_exists/2]).
+-export([resource_exists/2]).
+-export([delete_resource/2]).
 
 %% Custom callbacks.
 -export([category_get/2]).
@@ -15,7 +16,7 @@ init(Req, Opts) ->
     {cowboy_rest, Req, Opts}.
 
 allowed_methods(Req, State) ->
-    {[<<"GET">>, <<"POST">>], Req, State}.
+    {[<<"GET">>, <<"POST">>, <<"DELETE">>], Req, State}.
 
 content_types_provided(Req, State) ->
     {[
@@ -26,18 +27,20 @@ content_types_accepted(Req, State) ->
     {[{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, category_post}],
         Req, State}.
 
-%% TODO fill this in: check if the Tx and category exist
-%% resource_exists(Req, _State) ->
-%%     case cowboy_req:binding(tx, Req) of
-%%         undefined ->
-%%             {true, Req, index};
-%%         Tx ->
-%%             case valid_path(PasteID) and file_exists(PasteID) of
-%%                 true -> {true, Req, PasteID};
-%%                 false -> {false, Req, PasteID}
-%%             end
-%%     end.
+resource_exists(Req, State) ->
+    io:format("resource exists: ~p~n", [Req]),
+    {true, Req, State}.
 
+%resource_exists(Req, _State) ->
+%    case cowboy_req:binding(tx, Req) of
+%        undefined ->
+%            {true, Req, index};
+%        Tx ->
+%            case valid_path(PasteID) and file_exists(PasteID) of
+%                true -> {true, Req, PasteID};
+%                false -> {false, Req, PasteID}
+%            end
+%    end.
 
 category_post(Req, State) ->
     case cowboy_req:method(Req) of
@@ -70,7 +73,7 @@ fetch_categories(Req, State) ->
 
 fetch_categories_by_tx(Tx, Req, State) ->
     io:format("fetch_categories_by_tx with tx: ~p~n", [Tx]),
-    Sql = "select string_agg(c.name, ', ') categories "
+    Sql = "select string_agg(c.name || '||' || tc.id, ', ') categories "
           "from transaction_category tc "
           "inner join category c "
           "  on tc.cat_id = c.id "
@@ -120,6 +123,20 @@ kvs([KBin, VBin | Rest], KVs) ->
     kvs(Rest, [{K, V} | KVs]);
 kvs(_, KVs) ->
     KVs.
+
+delete_resource(Req, State) ->
+    io:format("Deleting~n", []),
+    TxCatId = cowboy_req:binding(tx_cat_id, Req),
+
+    Sql = "delete from transaction_category "
+          "where id = $1; ",
+    Return = budget_query:update(Sql, [TxCatId]),
+    case Return of
+        Count when Count > 0 ->
+            {true, Req, State};
+        _ ->
+            {false, Req, State}
+    end.
 
 b2i(Bin) ->
     list_to_integer(binary_to_list(Bin)).
