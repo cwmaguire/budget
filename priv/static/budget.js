@@ -445,15 +445,11 @@ function http_ready_state_change_event_handler(xhr, callback){
 function update_progress (oEvent) {
   if (oEvent.lengthComputable) {
     var percentComplete = oEvent.loaded / oEvent.total * 100;
-    //console.log("update progress");
   } else {
-    // Unable to compute progress information since the total size is unknown
-    //console.log("update progress: total size unknown");
   }
 }
 
 function transfer_complete(evt) {
-  //console.log("The transfer is complete.");
 }
 
 function transfer_failed(evt) {
@@ -467,7 +463,6 @@ function transfer_canceled(evt) {
 function cat_span(cat){
   let span = document.createElement("SPAN");
   let descAndId = cat.split("||");
-  //console.log("cat: " + cat + ", descAndId: " + descAndId);
   span.innerHTML = descAndId[0];
   span.id = descAndId[1];
   span.classList.add("category");
@@ -477,8 +472,6 @@ function cat_span(cat){
 
 function category_click(event){
   let catSpan = event.target;
-  //console.log("Cat span ID: " + catSpan.id);
-  //console.log("Cat span text: " + catSpan.innerHTML);
   http_delete("category/" + catSpan.id,
               function(){
                 elem_by_id(catSpan.id).remove()
