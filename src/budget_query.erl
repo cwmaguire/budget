@@ -1,14 +1,22 @@
 -module(budget_query).
 
+-export([fetch/2]).
+-export([fetch_jsonp/3]).
+-export([fetch_jsonp/4]).
 -export([fetch_value/2]).
--export([fetch/3]).
--export([fetch/4]).
 -export([update/2]).
 
-fetch(Sql, Params, Callback) ->
-    fetch(Sql, Params, Callback, fun tuples_to_lists/1).
+fetch(Sql, Params) ->
+    {ok, Conn} = budget_db:connect(),
+    {ok, Cols, Records} = budget_db:query(Conn, Sql, Params),
+    ColNames = [Name || {column, Name, _, _, _, _, _} <- Cols],
+    budget_db:close(Conn),
+    _Tuples = [lists:zip(ColNames, Rec) || Rec <- tuples_to_lists(Records)].
 
-fetch(Sql, Params, Callback, Transformer) ->
+fetch_jsonp(Sql, Params, Callback) ->
+    fetch_jsonp(Sql, Params, Callback, fun tuples_to_lists/1).
+
+fetch_jsonp(Sql, Params, Callback, Transformer) ->
     {ok, Conn} = budget_db:connect(),
     {ok, Cols, Records} = budget_db:query(Conn, Sql, Params),
     ColNames = [Name || {column, Name, _, _, _, _, _} <- Cols],
@@ -23,10 +31,15 @@ fetch(Sql, Params, Callback, Transformer) ->
 
 fetch_value(Sql, Params) ->
     {ok, Conn} = budget_db:connect(),
-    {ok, _Cols, [Record | _]} = budget_db:query(Conn, Sql, Params),
+    {ok, _Cols, Records} = budget_db:query(Conn, Sql, Params),
     budget_db:close(Conn),
-    [Value | _] = tuple_to_list(Record),
-    Value.
+    case Records of
+        [Record | _] ->
+            [Value | _] = tuple_to_list(Record),
+            Value;
+        [] ->
+            undefined
+    end.
 
 tuples_to_lists(Tuples) ->
     [tuple_to_list(Tuple) || Tuple <- Tuples].

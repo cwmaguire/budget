@@ -1,4 +1,7 @@
 "use strict";
+
+// DEPENDS ON budget_http.js
+
 // TODO I think I can remove these now that I have the JS in its own file
 // I think it was just the HTML filetype in Vim that struggled with HTML
 // and JS combined.
@@ -309,8 +312,9 @@ function cat_add_click(event){
   let value = input.value;
   let categoryId = category_id_by_value(categories(), value);
   if(-1 != categoryId){
-    //console.log("Category ID = " + categoryId);
-    let result = http_post("category",
+    console.log("Category ID = " + categoryId);
+    console.log("Transaction ID = " + rowId);
+    let result = http_post("transaction_category",
                            "tx=" + rowId + "&cat=" + categoryId,
                            function (){ reset_categories(rowId) });
     //console.log("category post result: " + result);
@@ -321,7 +325,7 @@ function cat_add_click(event){
 
 function reset_categories(rowId){
   let cell = elem_by_id("cell_categories_" + rowId);
-  http_get("category?tx=" + rowId,
+  http_get("transaction_category?tx=" + rowId,
            function (text){
              update_cell(cell, text);
            });
@@ -370,94 +374,9 @@ function iterator_find_first(iterator, key, value){
   return -1;
 }
 
+// TODO what was this for?
 function add_category(){
 
-}
-
-function http_post(restPath, postKVs, callback){
-  var xhr = new XMLHttpRequest();
-
-  //console.log("Calling http_post with postKVs: " + postKVs);
-  xhr.addEventListener("progress", update_progress);
-  xhr.addEventListener("load", transfer_complete);
-  xhr.addEventListener("error", transfer_failed);
-  xhr.addEventListener("abort", transfer_canceled);
-  xhr.addEventListener("readystatechange", http_ready_state_change_event_handler(xhr, callback));
-  xhr.open("POST", "http://localhost:8080/" + restPath, true);
-  xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
-  xhr.send(postKVs);
-  //console.log("xhr.responseText = " + xhr.responseText);
-  //console.log("xhr.response = " + xhr.response);
-}
-
-function http_post_ready_state_change_event_handler(xhr, callback){
-  let handler = function http_get_ready_state_change(event){
-    if(xhr.readyState == 4){
-      //console.log("ready state == 4: xhr.responseText = " + xhr.responseText);
-      //console.log("ready state == 4: xhr.response = " + xhr.response);
-      callback(xhr.responseText);
-    }
-  }
-  return handler;
-}
-
-function http_get(restPath, callback){
-  var xhr = new XMLHttpRequest();
-
-  //console.log("Calling http_get with restPath: " + restPath);
-  xhr.addEventListener("progress", update_progress);
-  xhr.addEventListener("load", transfer_complete);
-  xhr.addEventListener("error", transfer_failed);
-  xhr.addEventListener("abort", transfer_canceled);
-  xhr.addEventListener("readystatechange", http_ready_state_change_event_handler(xhr, callback));
-  xhr.open("GET", "http://localhost:8080/" + restPath, true);
-  xhr.send();
-}
-
-function http_delete(restPath, callback){
-  var xhr = new XMLHttpRequest();
-
-  //console.log("Calling http_delete with restPath: " + restPath);
-  xhr.addEventListener("progress", update_progress);
-  xhr.addEventListener("load", transfer_complete);
-  xhr.addEventListener("error", transfer_failed);
-  xhr.addEventListener("abort", transfer_canceled);
-  xhr.addEventListener("readystatechange", http_ready_state_change_event_handler(xhr, callback));
-  xhr.open("DELETE", "http://localhost:8080/" + restPath, true);
-  xhr.send();
-}
-
-function http_ready_state_change_event_handler(xhr, callback){
-  let handler = function http_get_ready_state_change(event){
-    //console.log("xhr.status = " + xhr.status);
-    //console.log("xhr.statusText = " + xhr.statusText);
-    if(xhr.readyState == 4 && xhr.status < 300){
-      //console.log("xhr.readyState = " + xhr.readyState);
-      //console.log("xhr.responseText = " + xhr.responseText);
-      //console.log("xhr.response = " + xhr.response);
-      callback(xhr.responseText);
-    }
-  }
-  return handler;
-}
-
-// progress on transfers from the server to the client (downloads)
-function update_progress (oEvent) {
-  if (oEvent.lengthComputable) {
-    var percentComplete = oEvent.loaded / oEvent.total * 100;
-  } else {
-  }
-}
-
-function transfer_complete(evt) {
-}
-
-function transfer_failed(evt) {
-  console.log("An error occurred while transferring the file.");
-}
-
-function transfer_canceled(evt) {
-  console.log("The transfer has been canceled by the user.");
 }
 
 function cat_span(cat){
@@ -472,7 +391,7 @@ function cat_span(cat){
 
 function category_click(event){
   let catSpan = event.target;
-  http_delete("category/" + catSpan.id,
+  http_delete("transaction_category/" + catSpan.id,
               function(){
                 elem_by_id(catSpan.id).remove()
               });

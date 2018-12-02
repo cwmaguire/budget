@@ -70,10 +70,10 @@ fetch_transactions(QsVals, Req, State) ->
 
     Params = [From, To],
 
-    Script = budget_query:fetch(Sql,
-                                Params,
-                                Callback,
-                                fun fix_dates/1),
+    Script = budget_query:fetch_jsonp(Sql,
+                                      Params,
+                                      Callback,
+                                      fun fix_dates/1),
 
 	{Script, Req, State}.
 

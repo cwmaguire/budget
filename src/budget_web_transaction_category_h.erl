@@ -5,15 +5,15 @@
 -export([allowed_methods/2]).
 -export([content_types_provided/2]).
 -export([content_types_accepted/2]).
-%-export([resource_exists/2]).
+-export([resource_exists/2]).
 -export([delete_resource/2]).
 
 %% Custom callbacks.
 -export([category_get/2]).
 -export([category_post/2]).
 
-init(Req, Opts) ->
-    {cowboy_rest, Req, Opts}.
+init(Req, State) ->
+    {cowboy_rest, Req, State}.
 
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"POST">>, <<"DELETE">>], Req, State}.
@@ -28,20 +28,40 @@ content_types_accepted(Req, State) ->
         Req, State}.
 
 resource_exists(Req, State) ->
-    io:format("resource exists: ~p~n", [Req]),
-    {true, Req, State}.
-
-category_post(Req, State) ->
     case cowboy_req:method(Req) of
+        <<"GET">> ->
+            QsVals = cowboy_req:parse_qs(Req),
+            io:format(user, "QsVals = ~p~n", [QsVals]),
+            {_, Tx} = lists:keyfind(<<"tx">>, 1, QsVals),
+            {tx_exists(b2i(Tx)), Req, State};
         <<"POST">> ->
-            category_add(Req, State);
+            {ok, Body, Req1} = cowboy_req:read_body(Req),
+            KVs = kvs(Body),
+            Tx = list_to_integer(proplists:get_value("tx", KVs)),
+            Cat = list_to_integer(proplists:get_value("cat", KVs)),
+            {tx_exists(Tx) and cat_exists(Cat), Req1, State};
         _ ->
             {true, Req, State}
     end.
 
+tx_exists(TxId) ->
+    Sql = "select count(null) "
+          "from transaction_category tc "
+          "where tc.id = $1; ",
+
+    Count = budget_query:fetch_value(Sql, [TxId]),
+    0 < Count.
+
+cat_exists(CatId) ->
+    Sql = "select id "
+          "from category c "
+          "where c.id = $1; ",
+
+    CatId == budget_query:fetch_value(Sql, [CatId]).
+
 category_get(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
-    {_, Tx} = lists:keyfind(<<"tx">>, 1, QsVals) of
+    {_, Tx} = lists:keyfind(<<"tx">>, 1, QsVals),
 
     Sql = "select string_agg(c.name || '||' || tc.id, ', ') categories "
           "from transaction_category tc "
@@ -60,11 +80,20 @@ category_get(Req, State) ->
 
     {Value, Req, State}.
 
+category_post(Req, State) ->
+    case cowboy_req:method(Req) of
+        <<"POST">> ->
+            category_add(Req, State);
+        _ ->
+            {true, Req, State}
+    end.
+
 category_add(Req, State) ->
     {ok, Body, Req1} = cowboy_req:read_body(Req),
     KVs = kvs(Body),
-    Tx = list_to_integer(proplists:get_value("tx", KVs)),
-    Cat = list_to_integer(proplists:get_value("cat", KVs)),
+    io:format(user, "KVs = ~p~n", [KVs]),
+    Tx = b2i(proplists:get_value("tx", KVs)),
+    Cat = b2i(proplists:get_value("cat", KVs)),
     Sql = "insert into transaction_category "
           "(tx_id, cat_id) "
           "select $1, $2 "
