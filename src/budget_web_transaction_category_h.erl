@@ -24,6 +24,7 @@ content_types_provided(Req, State) ->
      ], Req, State}.
 
 content_types_accepted(Req, State) ->
+    io:format(user, "Req = ~p~n", [Req]),
     {[{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, category_post}],
         Req, State}.
 
@@ -33,24 +34,39 @@ resource_exists(Req, State) ->
             QsVals = cowboy_req:parse_qs(Req),
             io:format(user, "QsVals = ~p~n", [QsVals]),
             {_, Tx} = lists:keyfind(<<"tx">>, 1, QsVals),
-            {tx_exists(b2i(Tx)), Req, State};
+            TxExists = tx_cat_exists(b2i(Tx)),
+            io:format(user, "TxExists = ~p~n", [TxExists]),
+            {tx_cat_exists(b2i(Tx)), Req, State};
         <<"POST">> ->
             {ok, Body, Req1} = cowboy_req:read_body(Req),
             KVs = kvs(Body),
             Tx = list_to_integer(proplists:get_value("tx", KVs)),
             Cat = list_to_integer(proplists:get_value("cat", KVs)),
-            {tx_exists(Tx) and cat_exists(Cat), Req1, State};
+            TxExists = tx_exists(Tx),
+            io:format(user, "TxExists = ~p~n", [TxExists]),
+            CatExists = cat_exists(Cat),
+            io:format(user, "CatExists = ~p~n", [CatExists]),
+            {tx_exists(Tx) and cat_exists(Cat), Req1, [{kvs, KVs} | State]};
         _ ->
             {true, Req, State}
     end.
 
-tx_exists(TxId) ->
+tx_cat_exists(TxId) ->
+    io:format(user, "TxCat exists with TxId = ~p~n", [TxId]),
     Sql = "select count(null) "
           "from transaction_category tc "
           "where tc.id = $1; ",
 
     Count = budget_query:fetch_value(Sql, [TxId]),
+    io:format(user, "Count = ~p~n", [Count]),
     0 < Count.
+
+tx_exists(TxId) ->
+    Sql = "select id "
+          "from transaction t "
+          "where t.id = $1; ",
+
+    TxId == budget_query:fetch_value(Sql, [TxId]).
 
 cat_exists(CatId) ->
     Sql = "select id "
@@ -89,11 +105,9 @@ category_post(Req, State) ->
     end.
 
 category_add(Req, State) ->
-    {ok, Body, Req1} = cowboy_req:read_body(Req),
-    KVs = kvs(Body),
-    io:format(user, "KVs = ~p~n", [KVs]),
-    Tx = b2i(proplists:get_value("tx", KVs)),
-    Cat = b2i(proplists:get_value("cat", KVs)),
+    KVs = proplists:get_value(kvs, State),
+    Tx = list_to_integer(proplists:get_value("tx", KVs)),
+    Cat = list_to_integer(proplists:get_value("cat", KVs)),
     Sql = "insert into transaction_category "
           "(tx_id, cat_id) "
           "select $1, $2 "
@@ -105,9 +119,9 @@ category_add(Req, State) ->
     Return = budget_query:update(Sql, [Tx, Cat]),
     case Return of
         Count when Count > 0 ->
-            {true, Req1, State};
+            {true, Req, State};
         _ ->
-            {false, Req1, State}
+            {false, Req, State}
     end.
 
 kvs(Binary) ->

@@ -13,8 +13,8 @@
 start(_Type, _Args) ->
 	Dispatch = cowboy_router:compile([
 		{'_', [
-			{"/transaction_category", [{tx_cat_id, int}], budget_web_transaction_category_h, []},
-			{"/category/[:tx_cat_id]", budget_web_category_h, []},
+			{"/transaction_category/[:tx_cat_id]", [{tx_cat_id, int}], budget_web_transaction_category_h, []},
+			{"/category", budget_web_category_h, []},
 			{"/", budget_web_h, []},
             {"/assets/[...]", cowboy_static,
              {priv_dir, budget, "static", [{etag, budget_app, etag}]}}

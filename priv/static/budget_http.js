@@ -3,7 +3,7 @@
 function http_post(restPath, postKVs, callback){
   var xhr = new XMLHttpRequest();
 
-  console.log("Calling http_post with postKVs: " + postKVs);
+  console.log("Calling http_post with path " + restPath + ", postKVs: " + postKVs);
   xhr.addEventListener("progress", update_progress);
   xhr.addEventListener("load", transfer_complete);
   xhr.addEventListener("error", transfer_failed);

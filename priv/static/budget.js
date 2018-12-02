@@ -314,7 +314,7 @@ function cat_add_click(event){
   if(-1 != categoryId){
     console.log("Category ID = " + categoryId);
     console.log("Transaction ID = " + rowId);
-    let result = http_post("transaction_category",
+    let result = http_post("transaction_category/",
                            "tx=" + rowId + "&cat=" + categoryId,
                            function (){ reset_categories(rowId) });
     //console.log("category post result: " + result);
