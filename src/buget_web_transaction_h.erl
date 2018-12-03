@@ -40,6 +40,7 @@ fetch(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
     fetch_transactions(QsVals, Req, State).
 
+%% TODO move to transaction handler
 fetch_transactions(QsVals, Req, State) ->
     {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
     {_, RawFrom} = lists:keyfind(<<"from">>, 1, QsVals),

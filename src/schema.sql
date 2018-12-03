@@ -1,14 +1,16 @@
 create table transaction(
-  id numeric,
+  id numeric not null,
   acct_type varchar,
   acct_num  varchar,
-  date date,
+  date date not null,
   posted date,
   cheq_num  varchar,
-  desc_1    varchar,
+  desc_1    varchar not null,
   desc_2    varchar,
   cad float,
-  usd float);
+  usd float,
+  parent numeric,
+  child_number);
 
 create unique index on transaction(id);
 

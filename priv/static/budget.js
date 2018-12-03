@@ -32,7 +32,7 @@ function fetch_transactions(){
     oldScript.remove();
   }
   var s = document.createElement("script");
-  s.src = "http://localhost:8080/" +
+  s.src = "http://localhost:8080/transaction/" +
     "?callback=transactions" +
     "&from=" + fromDate +
     "&to=" + toDate;
@@ -105,6 +105,10 @@ function load_transactions(){
 
   cell = headerRow.insertCell(headerRow.cells.length);
   cell.innerHTML = "add category";
+  cell.bgColor = lightGrey;
+
+  cell = headerRow.insertCell(headerRow.cells.length);
+  cell.innerHTML = "split";
   cell.bgColor = lightGrey;
 
   txs.forEach(table_writer(table));
@@ -186,6 +190,16 @@ function table_writer(table){
            cell.appendChild(categoryInput);
            cell.appendChild(categoryDatalist);
            cell.appendChild(categoryButton);
+
+           let splitButton = document.createElement("INPUT");
+           splitButton.id = "tx_split_button_" + row.id;
+           splitButton.value = "split";
+           splitButton.type = "button";
+           splitButton.addEventListener("click", tx_split_click);
+
+           cell = row.insertCell(row.cells.length);
+           cell.id = "tx_split_cell_" + row.id;
+           cell.appendChild(splitButton);
 
            row.style.cursor = "pointer";
          }
@@ -395,4 +409,31 @@ function category_click(event){
               function(){
                 elem_by_id(catSpan.id).remove()
               });
+}
+
+function tx_split_click(event){
+  let splitButton = event.target;
+  let txId = splitButton.id.split("_")[3];
+  http_post("transaction/",
+            "tx_id=" + txId,
+            function(){
+              add_transaction_row(row);
+            });
+  http_post("transaction/",
+            "tx_id=" + txId,
+            function(){
+              add_transaction_row(row);
+            });
+  event.target.value = "add split";
+  event.target.onclick = tx_split_add_click;
+}
+
+function tx_split_add_click(event){
+  let splitButton = event.target;
+  let txId = splitButton.id.split("_")[3];
+  http_post("transaction/",
+            "tx_id=" + txId,
+            function(){
+              add_transaction_row(row);
+            });
 }
