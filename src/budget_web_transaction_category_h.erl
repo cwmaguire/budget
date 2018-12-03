@@ -32,48 +32,56 @@ resource_exists(Req, State) ->
     case cowboy_req:method(Req) of
         <<"GET">> ->
             QsVals = cowboy_req:parse_qs(Req),
-            io:format(user, "QsVals = ~p~n", [QsVals]),
+            %io:format(user, "QsVals = ~p~n", [QsVals]),
             {_, Tx} = lists:keyfind(<<"tx">>, 1, QsVals),
-            TxExists = tx_cat_exists(b2i(Tx)),
-            io:format(user, "TxExists = ~p~n", [TxExists]),
-            {tx_cat_exists(b2i(Tx)), Req, State};
+            %TxExists = tx_exists(b2i(Tx)),
+            %io:format(user, "TxExists = ~p~n", [TxExists]),
+            {tx_exists(b2i(Tx)), Req, State};
         <<"POST">> ->
             {ok, Body, Req1} = cowboy_req:read_body(Req),
             KVs = kvs(Body),
             Tx = list_to_integer(proplists:get_value("tx", KVs)),
             Cat = list_to_integer(proplists:get_value("cat", KVs)),
-            TxExists = tx_exists(Tx),
-            io:format(user, "TxExists = ~p~n", [TxExists]),
-            CatExists = cat_exists(Cat),
-            io:format(user, "CatExists = ~p~n", [CatExists]),
+            %TxExists = tx_exists(Tx),
+            %io:format(user, "TxExists = ~p~n", [TxExists]),
+            %CatExists = cat_exists(Cat),
+            %io:format(user, "CatExists = ~p~n", [CatExists]),
             {tx_exists(Tx) and cat_exists(Cat), Req1, [{kvs, KVs} | State]};
         _ ->
             {true, Req, State}
     end.
 
-tx_cat_exists(TxId) ->
-    io:format(user, "TxCat exists with TxId = ~p~n", [TxId]),
-    Sql = "select count(null) "
-          "from transaction_category tc "
-          "where tc.id = $1; ",
-
-    Count = budget_query:fetch_value(Sql, [TxId]),
-    io:format(user, "Count = ~p~n", [Count]),
-    0 < Count.
+% tx_cat_exists(TxId) ->
+%     Sql = "select count(null) "
+%           "from transaction_category tc "
+%           "where tc.id = $1; ",
+%
+%     Count = budget_query:fetch_value(Sql, [TxId]),
+%     io:format(user, "Count = ~p~n", [Count]),
+%     0 < Count.
 
 tx_exists(TxId) ->
     Sql = "select id "
           "from transaction t "
           "where t.id = $1; ",
-
-    TxId == budget_query:fetch_value(Sql, [TxId]).
+    TxId == b2i(budget_query:fetch_value(Sql, [TxId])).
 
 cat_exists(CatId) ->
     Sql = "select id "
           "from category c "
           "where c.id = $1; ",
 
-    CatId == budget_query:fetch_value(Sql, [CatId]).
+    case budget_query:fetch_value(Sql, [CatId]) of
+        Int when is_integer(Int) ->
+            io:format(user, "cat_exists: Int = ~p~n", [Int]),
+            CatId == Int;
+        String when is_list(String) ->
+            io:format(user, "cat_exists: String = ~p~n", [String]),
+            CatId == list_to_integer(String);
+        Binary when is_binary(Binary) ->
+            io:format(user, "cat_exists: Binary = ~p~n", [Binary]),
+            CatId == b2i(Binary)
+    end.
 
 category_get(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
