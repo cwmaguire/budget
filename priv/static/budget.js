@@ -400,8 +400,6 @@ function cat_span(cat){
   span.id = descAndId[1];
   span.classList.add("category");
   span.addEventListener("click", category_click);
-  span.addEventListener("mouseover", category_mouseover);
-  span.addEventListener("mouseout", category_mouseout);
   return span;
 }
 
@@ -438,13 +436,4 @@ function tx_split_add_click(event){
             function(){
               add_transaction_row(row);
             });
-}
-
-function category_mouseover(event){
-  console.log("Mouse over");
-  event.target.style.backgroundColor = 'lightblue';
-}
-
-function category_mouseout(event){
-  event.target.style.backgroundColor = '';
 }
