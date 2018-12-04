@@ -1,4 +1,4 @@
--module(budget_web_h).
+-module(budget_web_transaction_h).
 
 %% Standard callbacks.
 -export([init/2]).
