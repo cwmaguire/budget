@@ -95,7 +95,7 @@ function load_transactions(){
   cell.appendChild(selectCheckbox);
 
   for (let key in tx){
-    if(key == "id"){
+    if(key == "id" || key == "parent" || key == "child_number"){
       continue;
     }
     cell = headerRow.insertCell(headerRow.cells.length);
@@ -111,98 +111,112 @@ function load_transactions(){
   cell.innerHTML = "split";
   cell.bgColor = lightGrey;
 
-  txs.forEach(table_writer(table));
+  let tbody = table.createTBody();
+
+  txs.forEach(table_writer(tbody));
 
   document.body.appendChild(table);
 }
 
-function table_writer(table){
-  return function(obj){
-           let row = table.insertRow();
-           row.id = obj.id;
-           rows[row.id] = row;
-           let cell;
-           let val;
-           let cats;
-           let categorySpans;
+function table_writer(tbody){
+  return function(obj){ create_tx_row(tbody, obj, true, 'last'); };
+}
 
-           let checkbox = document.createElement("INPUT");
-           checkbox.setAttribute("type", "checkbox");
-           checkbox.id = "cbx" + row.id;
-           checkboxes[row.id] = checkbox;
-           checkbox.addEventListener("click", cbx_mouse_click);
-           cell = row.insertCell(row.cells.length);
-           cell.id = "cbx_cell_" + row.id;
-           cell.appendChild(checkbox);
+function create_tx_row(tbody, obj, isParent, pos){
+  let index;
+  if(pos == 'last'){
+    index = tbody.rows.length + 1;
+  }else{
+    index = pos;
+  }
+  let row = tbody.insertRow();
+  row.id = obj.id;
+  rows[row.id] = row;
+  let cell;
+  let val;
+  let cats;
+  let categorySpans;
 
-           for(var k in obj){
-             val = obj[k];
-             if(k == "id"){
-               continue;
-             }else if(k == "categories"){
-               categorySpans = [];
-               if(obj[k]){
-                 //console.log("obj[k] = " + obj[k]);
-                 cats = obj[k].split(", ");
-                 cats.forEach(
-                   function(cat){
-                     categorySpans.push(cat_span(cat))
-                   }
-                 );
-               }
-               cell = row.insertCell(row.cells.length);
-               cell.id = "cell_" + k + "_" + row.id;
-               categorySpans.forEach(
-                 function(span){
-                   cell.appendChild(span);
-                 }
-               );
-               continue;
-             }else if((k == "date" || k == "posted") && obj[k]){
-               val = obj[k].split("T")[0];
-             }
-             cell = row.insertCell(row.cells.length);
-             cell.id = "cell_" + k + "_" + row.id;
-             cell.innerHTML = val;
-             cell.addEventListener("mouseover", cell_mouse_over);
-             cell.addEventListener("mouseout", cell_mouse_out);
-             cell.addEventListener("click", cell_mouse_click);
-           }
+  let checkbox = document.createElement("INPUT");
+  checkbox.setAttribute("type", "checkbox");
+  checkbox.id = "cbx" + row.id;
+  checkboxes[row.id] = checkbox;
+  checkbox.addEventListener("click", cbx_mouse_click);
+  cell = row.insertCell(row.cells.length);
+  cell.id = "cbx_cell_" + row.id;
+  cell.appendChild(checkbox);
 
-           let datalistId = "cat_dl_" + row.id;
+  for(var k in obj){
+    val = obj[k];
+    if(k == "id"){
+      continue;
+    }else if(k == "categories"){
+      categorySpans = [];
+      if(obj[k]){
+        //console.log("obj[k] = " + obj[k]);
+        cats = obj[k].split(", ");
+        cats.forEach(
+          function(cat){
+            categorySpans.push(cat_span(cat))
+          }
+        );
+      }
+      cell = row.insertCell(row.cells.length);
+      cell.id = "cell_" + k + "_" + row.id;
+      categorySpans.forEach(
+        function(span){
+          cell.appendChild(span);
+        }
+      );
+      continue;
+    }else if((k == "date" || k == "posted") && obj[k]){
+      val = obj[k].split("T")[0];
+    }else if(k == "parent" || k == "child_number"){
+      continue;
+    }
+    cell = row.insertCell(row.cells.length);
+    cell.id = "cell_" + k + "_" + row.id;
+    cell.innerHTML = val;
+    cell.addEventListener("mouseover", cell_mouse_over);
+    cell.addEventListener("mouseout", cell_mouse_out);
+    cell.addEventListener("click", cell_mouse_click);
+  }
 
-           let categoryDatalist = document.createElement("DATALIST");
-           categoryDatalist.id = datalistId;
-           add_categories_to_datalist(categoryDatalist);
+  let datalistId = "cat_dl_" + row.id;
 
-           let categoryInput = document.createElement("INPUT");
-           categoryInput.id = "cat_input_" + row.id;
-           categoryInput.setAttribute('list', datalistId);
+  let categoryDatalist = document.createElement("DATALIST");
+  categoryDatalist.id = datalistId;
+  add_categories_to_datalist(categoryDatalist);
 
-           let categoryButton = document.createElement("INPUT");
-           categoryButton.id = "cat_add_button_" + row.id;
-           categoryButton.value = "+";
-           categoryButton.type = "button";
-           categoryButton.addEventListener("click", cat_add_click);
+  let categoryInput = document.createElement("INPUT");
+  categoryInput.id = "cat_input_" + row.id;
+  categoryInput.setAttribute('list', datalistId);
 
-           cell = row.insertCell(row.cells.length);
-           cell.id = "cat_dl_cell_" + row.id;
-           cell.appendChild(categoryInput);
-           cell.appendChild(categoryDatalist);
-           cell.appendChild(categoryButton);
+  let categoryButton = document.createElement("INPUT");
+  categoryButton.id = "cat_add_button_" + row.id;
+  categoryButton.value = "+";
+  categoryButton.type = "button";
+  categoryButton.addEventListener("click", cat_add_click);
 
-           let splitButton = document.createElement("INPUT");
-           splitButton.id = "tx_split_button_" + row.id;
-           splitButton.value = "split";
-           splitButton.type = "button";
-           splitButton.addEventListener("click", tx_split_click);
+  cell = row.insertCell(row.cells.length);
+  cell.id = "cat_dl_cell_" + row.id;
+  cell.appendChild(categoryInput);
+  cell.appendChild(categoryDatalist);
+  cell.appendChild(categoryButton);
 
-           cell = row.insertCell(row.cells.length);
-           cell.id = "tx_split_cell_" + row.id;
-           cell.appendChild(splitButton);
+  if(isParent){
+    let splitButton = document.createElement("INPUT");
+    splitButton.id = "tx_split_button_" + row.id;
+    splitButton.value = "split";
+    splitButton.type = "button";
+    splitButton.addEventListener("click", tx_split_click);
 
-           row.style.cursor = "pointer";
-         }
+    cell = row.insertCell(row.cells.length);
+    cell.id = "tx_split_cell_" + row.id;
+    cell.appendChild(splitButton);
+  }
+
+  row.style.cursor = "pointer";
 }
 
 function add_categories_to_datalist(datalist){
@@ -412,28 +426,41 @@ function category_click(event){
 }
 
 function tx_split_click(event){
-  let splitButton = event.target;
-  let txId = splitButton.id.split("_")[3];
-  http_post("transaction/",
-            "tx_id=" + txId,
-            function(){
-              add_transaction_row(row);
-            });
-  http_post("transaction/",
-            "tx_id=" + txId,
-            function(){
-              add_transaction_row(row);
-            });
+  add_tx_children(event, 2);
   event.target.value = "add split";
   event.target.onclick = tx_split_add_click;
 }
 
 function tx_split_add_click(event){
-  let splitButton = event.target;
-  let txId = splitButton.id.split("_")[3];
-  http_post("transaction/",
-            "tx_id=" + txId,
-            function(){
-              add_transaction_row(row);
-            });
+  add_tx_children(event, 1);
+}
+
+function add_tx_children(event, count){
+  let button = event.target;
+  let row = button.parentElement.parentElement;
+  let txId = button.id.split("_")[3];
+  let i = 0;
+  let callback =
+    function(txURL){
+      console.log("Callback for http_post");
+      let url = txURL + "&callback=transactions";
+      let callback =
+        function(){
+          console.log("Callback for http_get");
+          add_transaction_row(row, transactions());
+        };
+      http_get(url, callback);
+    }
+  for(i = 0; i < count; i++){
+    http_post("transaction", "tx_id=" + txId, callback);
+  }
+}
+
+function add_transaction_row(parentRow, objs){
+  let obj = objs[0];
+  let table = elem_by_id("table1");
+  let tbody = table.tBodies[0];
+  let index = parentRow.rowIndex + 1;
+
+  create_tx_row(tbody, obj, true, index);
 }

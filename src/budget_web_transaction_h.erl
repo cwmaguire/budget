@@ -5,7 +5,7 @@
 -export([allowed_methods/2]).
 -export([content_types_provided/2]).
 -export([content_types_accepted/2]).
-%-export([resource_exists/2]).
+-export([resource_exists/2]).
 
 %% Custom callbacks.
 -export([budget_post/2]).
@@ -24,30 +24,90 @@ content_types_provided(Req, State) ->
 	], Req, State}.
 
 content_types_accepted(Req, State) ->
-	{[{{<<"application">>, <<"json">>, '*'}, budget_post}],
+	{[{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, budget_post}],
 		Req, State}.
 
+resource_exists(Req, State) ->
+    case cowboy_req:method(Req) of
+        <<"GET">> ->
+            QsVals = cowboy_req:parse_qs(Req),
+            %io:format(user, "QsVals = ~p~n", [QsVals]),
+            case lists:keyfind(<<"tx">>, 1, QsVals) of
+                {_, Tx} ->
+                    %TxExists = tx_exists(b2i(Tx)),
+                    %io:format(user, "TxExists = ~p~n", [TxExists]),
+                    {tx_exists(b2i(Tx)), Req, State};
+                _ ->
+                    {true, Req, State}
+            end;
+        <<"POST">> ->
+            {ok, Body, Req1} = cowboy_req:read_body(Req),
+            KVs = kvs(Body),
+            Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
+            {tx_exists(Tx), Req1, [{kvs, KVs} | State]};
+        _ ->
+            {true, Req, State}
+    end.
+
+tx_exists(TxId) ->
+    Sql = "select id "
+          "from transaction t "
+          "where t.id = $1; ",
+    TxId == b2i(budget_query:fetch_value(Sql, [TxId])).
+
 budget_post(Req, State) ->
-	case cowboy_req:method(Req) of
-		<<"POST">> ->
-			{{true, <<"/whatever">>}, Req, State};
-		_ ->
-			{true, Req, State}
-	end.
+    KVs = proplists:get_value(kvs, State),
+    Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
+    Hash = copy_parent(Tx),
+    {{true, "/transaction/?tx_id=" ++ Hash}, Req, State}.
+
+kvs(Binary) ->
+    Bins = binary:split(Binary, [<<"&">>, <<"=">>], [global]),
+    kvs(Bins, []).
+
+kvs([KBin, VBin | Rest], KVs) ->
+    K = binary_to_list(KBin),
+    V = binary_to_list(VBin),
+    kvs(Rest, [{K, V} | KVs]);
+kvs(_, KVs) ->
+    KVs.
 
 %budget_get(Req, #{from_date := From, to_date := To}) ->
 fetch(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
-    fetch_transactions(QsVals, Req, State).
+    case lists:keyfind(tx_id, 1, QsVals) of
+      false ->
+          fetch_transactions_by_date(QsVals, Req, State);
+      {tx_id, _TxId} ->
+          fetch_transaction(QsVals, Req, State)
+    end.
 
-%% TODO move to transaction handler
-fetch_transactions(QsVals, Req, State) ->
+fetch_transaction(QsVals, Req, State) ->
+    {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
+    {_, TxId} = lists:keyfind(<<"tx_id">>, 1, QsVals),
+    WhereClause = "where id = $1 ",
+    Sql = tx_query(WhereClause),
+    Params = [TxId],
+    Script = budget_query:fetch_jsonp(Sql, Params, Callback),
+    {Script, Req, State}.
+
+fetch_transactions_by_date(QsVals, Req, State) ->
     {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
     {_, RawFrom} = lists:keyfind(<<"from">>, 1, QsVals),
     {_, RawTo} = lists:keyfind(<<"to">>, 1, QsVals),
     From = to_date(RawFrom),
     To = to_date(RawTo),
 
+    WhereClause = "where date between $1 and $2 ",
+    Sql = tx_query(WhereClause),
+    Params = [From, To],
+    Script = budget_query:fetch_jsonp(Sql,
+                                      Params,
+                                      Callback),
+
+	{Script, Req, State}.
+
+tx_query(WhereClause) ->
     GroupBy = "t.id, "
               "t.acct_type, "
               "t.acct_num, "
@@ -57,26 +117,20 @@ fetch_transactions(QsVals, Req, State) ->
               "t.desc_1, "
               "t.desc_2, "
               "t.cad, "
-              "t.usd ",
+              "t.usd, "
+              "t.parent, "
+              "t.child_number ",
 
-    Sql = "select t.*, "
-          "       string_agg(c.name || '||' || tc.id, ', ') categories "
-          "from transaction t "
-          "left join transaction_category tc "
-          "  on t.id = tc.tx_id "
-          "left join category c "
-          "  on tc.cat_id = c.id "
-          "where date between $1 and $2 "
-          "group by " ++ GroupBy ++ "; ",
-
-    Params = [From, To],
-
-    Script = budget_query:fetch_jsonp(Sql,
-                                      Params,
-                                      Callback,
-                                      fun fix_dates/1),
-
-	{Script, Req, State}.
+    "select t.*, "
+    "       string_agg(c.name || '||' || tc.id, ', ') categories "
+    "from transaction t "
+    "left join transaction_category tc "
+    "  on t.id = tc.tx_id "
+    "left join category c "
+    "  on tc.cat_id = c.id " ++
+    WhereClause ++
+    "group by " ++ GroupBy ++
+    "order by t.\"date\", coalesce(t.parent, t.id), t.child_number;".
 
 to_date(List) ->
     DateStrings = string:split(List, "-", all),
@@ -93,7 +147,95 @@ fix_dates(List) when is_list(List) ->
 fix_date(List) when is_list(List) ->
     [fix_date(E) || E <- List];
 fix_date({Y, M, D}) when is_integer(Y), is_integer(M), is_integer(D) ->
-    %io:format("Replacing date: {~p, ~p, ~p}~n", [Y, M, D]),
     {{Y, M, D}, {0, 0, 0}};
 fix_date(Other) ->
     Other.
+
+copy_parent(ParentId) ->
+    ParentSql = "select "
+                "       acct_type, "
+                "       acct_num, "
+                "       date, "
+                "       posted, "
+                "       cheq_num, "
+                "       desc_1, "
+                "       desc_2, "
+                "       cad, "
+                "       usd, "
+                "       id parent "
+                "from transaction "
+                "where id = $1;",
+
+    [Child0] = budget_query:fetch(ParentSql, [ParentId]),
+    io:format(user, "Child0 = ~p~n", [Child0]),
+
+    NumChildrenSql = "select count(*) "
+                     "from transaction "
+                     "where parent = $1; ",
+
+    NumChildren = budget_query:fetch_value(NumChildrenSql, [ParentId]),
+
+    {Date, _} = proplists:get_value(<<"date">>, Child0),
+    Child1 = lists:keystore(<<"date">>,
+                            1,
+                            Child0,
+                            {date, Date}),
+
+    Child2 = case proplists:get_value(posted, Child1) of
+                  {Posted, _} ->
+                      lists:keystore(<<"posted">>,
+                                     1,
+                                     Child1,
+                                     {posted, Posted});
+                  _ ->
+                     Child1
+             end,
+
+    Child3 = lists:keystore(<<"child_number">>,
+                            1,
+                            Child2,
+                            {child_number, NumChildren + 1}),
+
+    Values = [V || {_K, V} <- Child3],
+
+    InsertSql = "insert into transaction "
+                "(id, acct_type, acct_num, date, "
+                " posted, cheq_num, desc_1, desc_2, "
+                "cad, usd, parent, child_number) "
+                "values "
+                "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);",
+
+    HashedChild1 = [Hash | _] = hashed_record(Values),
+    io:format(user, "HashedChild1 = ~p~n", [HashedChild1]),
+    1 = budget_query:update(InsertSql, HashedChild1),
+    Hash.
+
+
+hashed_record(Rec) ->
+    io:format(user, "Rec = ~p~n", [Rec]),
+    Strings = [serialize(Field) || Field <- Rec],
+    io:format(user, "Strings = ~p~n", [Strings]),
+    String = lists:flatten(Strings),
+    Hash = xxhash:hash64(String),
+    [Hash | Rec].
+
+serialize(Atom) when is_atom(Atom) ->
+    atom_to_list(Atom);
+serialize(Int) when is_integer(Int) ->
+    i2l(Int);
+serialize(Float) when is_float(Float) ->
+    io_lib:format("~.2.0f", [Float]);
+serialize(Bin) when is_binary(Bin) ->
+    binary_to_list(Bin);
+serialize({Y, M, D}) ->
+    [i2l(Y), i2l(M), i2l(D)];
+serialize({{Y, M, D}, {H, Min, S}}) ->
+    [i2l(Y), i2l(M), i2l(D), i2l(H), i2l(Min), i2l(S)];
+serialize(List) ->
+    List.
+
+i2l(I) ->
+    integer_to_list(I).
+
+b2i(Bin) ->
+    list_to_integer(binary_to_list(Bin)).
