@@ -36,11 +36,17 @@ fetch_value(Sql, Params) ->
     %[tuple_to_list(Tuple) || Tuple <- Tuples].
 
 update(Sql, Params) ->
-    io:format("Calling update with Params: ~p~n", [Params]),
+    %io:format("Calling update with Params: ~p~n", [Params]),
     {ok, Conn} = budget_db:connect(),
-    {ok, NumUpdated} = budget_db:query(Conn, Sql, Params),
+    Return =
+    case budget_db:query(Conn, Sql, Params) of
+        {ok, NumUpdated} ->
+             NumUpdated;
+        {ok, _Count, _Columns, [{Value}]} ->
+             Value
+    end,
     budget_db:close(Conn),
-    NumUpdated.
+    Return.
 
 fix_dates(List) when is_list(List) ->
     [fix_date(tuple_to_list(Rec)) || Rec <- List].

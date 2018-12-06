@@ -58,8 +58,14 @@ tx_exists(TxId) ->
 budget_post(Req, State) ->
     KVs = proplists:get_value(kvs, State),
     Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
+    Callback = proplists:get_value("callback", KVs),
     Hash = copy_parent(Tx),
-    {{true, "/transaction/?tx_id=" ++ Hash}, Req, State}.
+    %io:format("Returning ~p~n", [Hash]),
+    URL = <<"/transaction?tx_id=",
+            (integer_to_binary(Hash))/binary,
+            "&callback=",
+            (list_to_binary(Callback))/binary>>,
+    {{true, URL}, Req, State}.
 
 kvs(Binary) ->
     Bins = binary:split(Binary, [<<"&">>, <<"=">>], [global]),
@@ -75,17 +81,17 @@ kvs(_, KVs) ->
 %budget_get(Req, #{from_date := From, to_date := To}) ->
 fetch(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
-    case lists:keyfind(tx_id, 1, QsVals) of
+    case lists:keyfind(<<"tx_id">>, 1, QsVals) of
       false ->
           fetch_transactions_by_date(QsVals, Req, State);
-      {tx_id, _TxId} ->
+      {<<"tx_id">>, _TxId} ->
           fetch_transaction(QsVals, Req, State)
     end.
 
 fetch_transaction(QsVals, Req, State) ->
     {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
     {_, TxId} = lists:keyfind(<<"tx_id">>, 1, QsVals),
-    WhereClause = "where id = $1 ",
+    WhereClause = "where t.id = $1 ",
     Sql = tx_query(WhereClause),
     Params = [TxId],
     Script = budget_query:fetch_jsonp(Sql, Params, Callback),
@@ -166,14 +172,20 @@ copy_parent(ParentId) ->
                 "from transaction "
                 "where id = $1;",
 
+    %io:format("Self = ~p~n", [self()]),
     [Child0] = budget_query:fetch(ParentSql, [ParentId]),
-    io:format(user, "Child0 = ~p~n", [Child0]),
+    %io:format(user, "Child0 = ~p~n", [Child0]),
 
-    NumChildrenSql = "select count(*) "
-                     "from transaction "
-                     "where parent = $1; ",
+    NumChildrenSql = "insert into transaction_child_number "
+                     "(tx_id, child_number) "
+                     "values "
+                     "($1, 1) "
+                     "on conflict (tx_id) "
+                     "do update set child_number = transaction_child_number.child_number + 1 "
+                     "returning transaction_child_number.child_number;",
 
-    NumChildren = budget_query:fetch_value(NumChildrenSql, [ParentId]),
+    NumChildren = budget_query:update(NumChildrenSql, [ParentId]),
+    %io:format(user, "NumChildren = ~p~n", [NumChildren]),
 
     {Date, _} = proplists:get_value(<<"date">>, Child0),
     Child1 = lists:keystore(<<"date">>,
@@ -194,9 +206,10 @@ copy_parent(ParentId) ->
     Child3 = lists:keystore(<<"child_number">>,
                             1,
                             Child2,
-                            {child_number, NumChildren + 1}),
+                            {child_number, NumChildren}),
 
     Values = [V || {_K, V} <- Child3],
+    %io:format(user, "Values = ~p~n", [Values]),
 
     InsertSql = "insert into transaction "
                 "(id, acct_type, acct_num, date, "
@@ -206,15 +219,16 @@ copy_parent(ParentId) ->
                 "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);",
 
     HashedChild1 = [Hash | _] = hashed_record(Values),
-    io:format(user, "HashedChild1 = ~p~n", [HashedChild1]),
+    %io:format(user, "Parent ID = ~p~n", [ParentId]),
+    %io:format(user, "HashedChild1 = ~p~n", [HashedChild1]),
     1 = budget_query:update(InsertSql, HashedChild1),
     Hash.
 
 
 hashed_record(Rec) ->
-    io:format(user, "Rec = ~p~n", [Rec]),
+    %io:format(user, "Rec = ~p~n", [Rec]),
     Strings = [serialize(Field) || Field <- Rec],
-    io:format(user, "Strings = ~p~n", [Strings]),
+    %io:format(user, "Strings = ~p~n", [Strings]),
     String = lists:flatten(Strings),
     Hash = xxhash:hash64(String),
     [Hash | Rec].

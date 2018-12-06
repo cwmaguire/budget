@@ -440,19 +440,21 @@ function add_tx_children(event, count){
   let row = button.parentElement.parentElement;
   let txId = button.id.split("_")[3];
   let i = 0;
-  let callback =
+  let callbackPost =
     function(txURL){
-      console.log("Callback for http_post");
+      console.log("Callback for http_post. txURL = " + txURL);
       let url = txURL + "&callback=transactions";
-      let callback =
+      console.log("url = " + url);
+      let callbackGet =
         function(){
           console.log("Callback for http_get");
           add_transaction_row(row, transactions());
         };
-      http_get(url, callback);
+      //http_get(url, callbackGet);
     }
   for(i = 0; i < count; i++){
-    http_post("transaction", "tx_id=" + txId, callback);
+    let kvs = "tx_id=" + txId + "&callback=transactions"
+    http_post("transaction", kvs, callbackPost);
   }
 }
 

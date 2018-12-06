@@ -12,6 +12,10 @@ create table transaction(
   parent numeric,
   child_number);
 
+create table transaction_child_number(
+  tx_id numeric references transaction(id),
+  child_number int);
+
 create unique index on transaction(id);
 
 create table category(
