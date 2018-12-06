@@ -123,13 +123,14 @@ function table_writer(tbody){
 }
 
 function create_tx_row(tbody, obj, isParent, pos){
+  console.log("create_tx_row called with pos " + pos);
   let index;
   if(pos == 'last'){
-    index = tbody.rows.length + 1;
+    index = -1;
   }else{
     index = pos;
   }
-  let row = tbody.insertRow();
+  let row = tbody.insertRow(index);
   row.id = obj.id;
   rows[row.id] = row;
   let cell;
@@ -439,30 +440,31 @@ function add_tx_children(event, count){
   let button = event.target;
   let row = button.parentElement.parentElement;
   let txId = button.id.split("_")[3];
-  let i = 0;
-  let callbackPost =
-    function(txURL){
-      console.log("Callback for http_post. txURL = " + txURL);
-      let url = txURL + "&callback=transactions";
-      console.log("url = " + url);
-      let callbackGet =
-        function(){
-          console.log("Callback for http_get");
-          add_transaction_row(row, transactions());
-        };
-      //http_get(url, callbackGet);
-    }
-  for(i = 0; i < count; i++){
-    let kvs = "tx_id=" + txId + "&callback=transactions"
-    http_post("transaction", kvs, callbackPost);
+  for(let i = 0; i < count; i++){
+    let kvs = "tx_id=" + txId + "&callback=transactions" + i
+    http_post("transaction", kvs, callback_function(row, i));
   }
 }
 
+function callback_function(row, i){
+  console.log("Creating POST callback function with " + i);
+  let f = function(jsonp){
+            console.log("POST callback function called");
+            let s = document.createElement("SCRIPT");
+            s.text = jsonp;
+            document.body.appendChild(s);
+            add_transaction_row(row, window["transactions" + i]());
+          };
+  return f;
+}
+
 function add_transaction_row(parentRow, objs){
+  console.log("add_transaction_row called");
   let obj = objs[0];
   let table = elem_by_id("table1");
   let tbody = table.tBodies[0];
-  let index = parentRow.rowIndex + 1;
+  let index = parentRow.rowIndex;
+  console.log("Parent row index = " + parentRow.rowIndex);
 
   create_tx_row(tbody, obj, true, index);
 }
