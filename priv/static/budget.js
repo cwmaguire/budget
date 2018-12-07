@@ -123,7 +123,6 @@ function table_writer(tbody){
 }
 
 function create_tx_row(tbody, obj, isParent, pos){
-  console.log("create_tx_row called with pos " + pos);
   let index;
   if(pos == 'last'){
     index = -1;
@@ -154,7 +153,6 @@ function create_tx_row(tbody, obj, isParent, pos){
     }else if(k == "categories"){
       categorySpans = [];
       if(obj[k]){
-        //console.log("obj[k] = " + obj[k]);
         cats = obj[k].split(", ");
         cats.forEach(
           function(cat){
@@ -221,12 +219,10 @@ function create_tx_row(tbody, obj, isParent, pos){
 }
 
 function add_categories_to_datalist(datalist){
-  //console.log("Adding " + categories().length + " categories to datalist " + datalist.id);
   categories().forEach(x => insert_category(datalist, x));
 }
 
 function insert_category(datalist, category){
-  //console.log("Adding category " + category.name + " to datalist " + datalist.id);
   var option = document.createElement("OPTION");
   option.id = datalist.id + "_option_cat_" + category['id'];
   option.value = category['name'];
@@ -341,12 +337,9 @@ function cat_add_click(event){
   let value = input.value;
   let categoryId = category_id_by_value(categories(), value);
   if(-1 != categoryId){
-    console.log("Category ID = " + categoryId);
-    console.log("Transaction ID = " + rowId);
     let result = http_post("transaction_category/",
                            "tx=" + rowId + "&cat=" + categoryId,
                            function (){ reset_categories(rowId) });
-    //console.log("category post result: " + result);
     reset_categories(rowId);
   }
   input.value = "";
@@ -420,16 +413,15 @@ function cat_span(cat){
 
 function category_click(event){
   let catSpan = event.target;
-  http_delete("transaction_category/" + catSpan.id,
-              function(){
-                elem_by_id(catSpan.id).remove()
-              });
+  delete_category(catSpan);
 }
 
 function tx_split_click(event){
+  let row = event.target.parentElement.parentElement;
   add_tx_children(event, 2);
   event.target.value = "add split";
   event.target.onclick = tx_split_add_click;
+  clear_categories(row);
 }
 
 function tx_split_add_click(event){
@@ -447,9 +439,7 @@ function add_tx_children(event, count){
 }
 
 function callback_function(row, i){
-  console.log("Creating POST callback function with " + i);
   let f = function(jsonp){
-            console.log("POST callback function called");
             let s = document.createElement("SCRIPT");
             s.text = jsonp;
             document.body.appendChild(s);
@@ -459,12 +449,29 @@ function callback_function(row, i){
 }
 
 function add_transaction_row(parentRow, objs){
-  console.log("add_transaction_row called");
   let obj = objs[0];
   let table = elem_by_id("table1");
   let tbody = table.tBodies[0];
   let index = parentRow.rowIndex;
-  console.log("Parent row index = " + parentRow.rowIndex);
 
   create_tx_row(tbody, obj, true, index);
+}
+
+function clear_categories(row){
+  let catSpan;
+  console.log("clear_categories(...) with row " + row.id);
+  let categoriesCell = elem_by_id("cell_categories_" + row.id);
+  console.log("categoriesCell has id " + categoriesCell.id);
+  console.log("categoriesCell has " + categoriesCell.children.length + " children");
+  for(let i = 0; i < categoriesCell.children.length; i++){
+    console.log("deleting cat span with id " + categoriesCell.children[i].id);
+    delete_category(categoriesCell.children[i]);
+  }
+}
+
+function delete_category(catSpan){
+  http_delete("transaction_category/" + catSpan.id,
+              function(){
+                elem_by_id(catSpan.id).remove()
+              });
 }

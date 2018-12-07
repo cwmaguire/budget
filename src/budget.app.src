@@ -2,7 +2,11 @@
     {description, ""},
     {vsn, "0.1.0"},
     {id, "git"},
-    {modules, []},
+    {modules,
+     [budget_web_transaction_h,
+      budget_web_transaction_category_h,
+      budget_web_category_h,
+      budget_query]},
     {registered, []},
     {applications, [
         kernel,

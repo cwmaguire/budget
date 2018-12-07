@@ -15,7 +15,6 @@ function http_get(restPath, callback){
 function http_post(restPath, postKVs, callback){
   var xhr = new XMLHttpRequest();
 
-  console.log("Calling http_post with path " + restPath + ", postKVs: " + postKVs);
   xhr.addEventListener("progress", update_progress);
   xhr.addEventListener("load", transfer_complete);
   xhr.addEventListener("error", transfer_failed);
@@ -59,9 +58,7 @@ function transfer_complete(evt) {
 }
 
 function transfer_failed(evt) {
-  console.log("An error occurred while transferring the file.");
 }
 
 function transfer_canceled(evt) {
-  console.log("The transfer has been canceled by the user.");
 }
