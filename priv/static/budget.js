@@ -142,6 +142,12 @@ function create_tx_row(tbody, obj, pos){
   let isParent = Boolean(obj.is_parent);
   let isChild = Boolean(obj.parent);
 
+  if(isParent){
+    row.className = "parent";
+  }else if(isChild){
+    row.className = "child";
+  }
+
   let checkbox = document.createElement("INPUT");
   checkbox.setAttribute("type", "checkbox");
   checkbox.id = "cbx" + row.id;
@@ -183,8 +189,8 @@ function create_tx_row(tbody, obj, pos){
     cell = row.insertCell(row.cells.length);
     cell.id = "cell_" + k + "_" + row.id;
     cell.innerHTML = val;
-    cell.addEventListener("mouseover", cell_mouse_over);
-    cell.addEventListener("mouseout", cell_mouse_out);
+    //cell.addEventListener("mouseover", cell_mouse_over);
+    //cell.addEventListener("mouseout", cell_mouse_out);
     cell.addEventListener("click", cell_mouse_click);
   }
 
@@ -311,7 +317,8 @@ function select_row(rowId){
   selectedRowIds.push(rowId);
   checkboxes[rowId].checked = true;
   let row = elem_by_id(rowId);
-  row.style.backgroundColor = lightBlue;
+  console.log("Row className is " + row.className);
+  row.className = row.className + "Selected";
   elem_by_id("allOrNone").checked = true;
 }
 
@@ -323,7 +330,11 @@ function deselect_row(rowId){
   selectedRowIds = selectedRowIds.filter(selRowId => selRowId != rowId);
   checkboxes[rowId].checked = false;
   let row = elem_by_id(rowId);
-  row.style.backgroundColor = white;
+  if(row.className == "parentSelected"){
+    row.className = "parent";
+  }else if(row.className == "childSelected"){
+    row.className = "child";
+  }
   if(!is_any_row_selected()){
     elem_by_id("allOrNone").checked = false;
   }
