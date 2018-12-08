@@ -214,6 +214,7 @@ function create_tx_row(tbody, obj, pos){
     console.log("isParent: " + isParent + ", !isChild: " + !isChild);
     let value = isParent ? "split again" : "split";
     let splitButton = document.createElement("INPUT");
+    let eventHandler = isParent ? tx_split_click : tx_split_add_click;
     splitButton.id = "tx_split_button_" + row.id;
     splitButton.value = value;
     splitButton.type = "button";
@@ -426,15 +427,18 @@ function category_click(event){
 }
 
 function tx_split_click(event){
+  console.log("tx_split_click");
   let row = event.target.parentElement.parentElement;
   add_tx_children(event, 2);
   event.target.value = "add split";
+  event.target.removeEventListener("click", tx_split_click);
   event.target.onclick = tx_split_add_click;
   clear_categories(row);
   disable_row(row);
 }
 
 function tx_split_add_click(event){
+  console.log("tx_split_add_click");
   add_tx_children(event, 1);
 }
 
@@ -454,6 +458,7 @@ function callback_function(row, i){
             s.text = jsonp;
             document.body.appendChild(s);
             add_transaction_row(row, window["transactions" + i]());
+            s.remove();
           };
   return f;
 }
