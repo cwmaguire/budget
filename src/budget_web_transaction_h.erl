@@ -104,7 +104,7 @@ fetch_transactions_by_date(QsVals, Req, State) ->
     From = to_date(RawFrom),
     To = to_date(RawTo),
 
-    WhereClause = "where date between $1 and $2 ",
+    WhereClause = "where t.date between $1 and $2 ",
     Sql = tx_query(WhereClause),
     Params = [From, To],
     Script = budget_query:fetch_jsonp(Sql,
@@ -128,8 +128,11 @@ tx_query(WhereClause) ->
               "t.child_number ",
 
     "select t.*, "
-    "       string_agg(c.name || '||' || tc.id, ', ') categories "
+    "       string_agg(c.name || '||' || tc.id, ', ') categories, "
+    "       max(t_child.child_number) > 0 \"is_parent\" "
     "from transaction t "
+    "left join transaction t_child "
+    "  on t.id = t_child.parent "
     "left join transaction_category tc "
     "  on t.id = tc.tx_id "
     "left join category c "

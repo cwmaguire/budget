@@ -95,7 +95,10 @@ function load_transactions(){
   cell.appendChild(selectCheckbox);
 
   for (let key in tx){
-    if(key == "id" || key == "parent" || key == "child_number"){
+    if(key == "id" ||
+      key == "parent" ||
+      key == "child_number" ||
+      key == "is_parent"){
       continue;
     }
     cell = headerRow.insertCell(headerRow.cells.length);
@@ -119,10 +122,10 @@ function load_transactions(){
 }
 
 function table_writer(tbody){
-  return function(obj){ create_tx_row(tbody, obj, true, 'last'); };
+  return function(obj){ create_tx_row(tbody, obj, 'last'); };
 }
 
-function create_tx_row(tbody, obj, isParent, pos){
+function create_tx_row(tbody, obj, pos){
   let index;
   if(pos == 'last'){
     index = -1;
@@ -136,6 +139,8 @@ function create_tx_row(tbody, obj, isParent, pos){
   let val;
   let cats;
   let categorySpans;
+  let isParent = Boolean(obj.is_parent);
+  let isChild = Boolean(obj.parent);
 
   let checkbox = document.createElement("INPUT");
   checkbox.setAttribute("type", "checkbox");
@@ -170,7 +175,9 @@ function create_tx_row(tbody, obj, isParent, pos){
       continue;
     }else if((k == "date" || k == "posted") && obj[k]){
       val = obj[k].split("T")[0];
-    }else if(k == "parent" || k == "child_number"){
+    }else if(k == "parent" ||
+      k == "child_number" ||
+      k == "is_parent"){
       continue;
     }
     cell = row.insertCell(row.cells.length);
@@ -203,10 +210,12 @@ function create_tx_row(tbody, obj, isParent, pos){
   cell.appendChild(categoryDatalist);
   cell.appendChild(categoryButton);
 
-  if(isParent){
+  if(isParent || !isChild){
+    console.log("isParent: " + isParent + ", !isChild: " + !isChild);
+    let value = isParent ? "split again" : "split";
     let splitButton = document.createElement("INPUT");
     splitButton.id = "tx_split_button_" + row.id;
-    splitButton.value = "split";
+    splitButton.value = value;
     splitButton.type = "button";
     splitButton.addEventListener("click", tx_split_click);
 
@@ -422,6 +431,7 @@ function tx_split_click(event){
   event.target.value = "add split";
   event.target.onclick = tx_split_add_click;
   clear_categories(row);
+  disable_row(row);
 }
 
 function tx_split_add_click(event){
@@ -459,12 +469,8 @@ function add_transaction_row(parentRow, objs){
 
 function clear_categories(row){
   let catSpan;
-  console.log("clear_categories(...) with row " + row.id);
   let categoriesCell = elem_by_id("cell_categories_" + row.id);
-  console.log("categoriesCell has id " + categoriesCell.id);
-  console.log("categoriesCell has " + categoriesCell.children.length + " children");
   for(let i = 0; i < categoriesCell.children.length; i++){
-    console.log("deleting cat span with id " + categoriesCell.children[i].id);
     delete_category(categoriesCell.children[i]);
   }
 }
@@ -474,4 +480,8 @@ function delete_category(catSpan){
               function(){
                 elem_by_id(catSpan.id).remove()
               });
+}
+
+function disable_row(row){
+
 }
