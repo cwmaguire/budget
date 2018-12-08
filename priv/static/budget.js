@@ -162,22 +162,25 @@ function create_tx_row(tbody, obj, pos){
     if(k == "id"){
       continue;
     }else if(k == "categories"){
-      categorySpans = [];
-      if(obj[k]){
-        cats = obj[k].split(", ");
-        cats.forEach(
-          function(cat){
-            categorySpans.push(cat_span(cat))
+      cell = row.insertCell(row.cells.length);
+      cell.id = "cell_" + k + "_" + row.id;
+
+      if(!isParent){
+        categorySpans = [];
+        if(obj[k]){
+          cats = obj[k].split(", ");
+          cats.forEach(
+            function(cat){
+              categorySpans.push(cat_span(cat))
+            }
+          );
+        }
+        categorySpans.forEach(
+          function(span){
+            cell.appendChild(span);
           }
         );
       }
-      cell = row.insertCell(row.cells.length);
-      cell.id = "cell_" + k + "_" + row.id;
-      categorySpans.forEach(
-        function(span){
-          cell.appendChild(span);
-        }
-      );
       continue;
     }else if((k == "date" || k == "posted") && obj[k]){
       val = obj[k].split("T")[0];
@@ -189,32 +192,33 @@ function create_tx_row(tbody, obj, pos){
     cell = row.insertCell(row.cells.length);
     cell.id = "cell_" + k + "_" + row.id;
     cell.innerHTML = val;
-    //cell.addEventListener("mouseover", cell_mouse_over);
-    //cell.addEventListener("mouseout", cell_mouse_out);
     cell.addEventListener("click", cell_mouse_click);
   }
 
-  let datalistId = "cat_dl_" + row.id;
-
-  let categoryDatalist = document.createElement("DATALIST");
-  categoryDatalist.id = datalistId;
-  add_categories_to_datalist(categoryDatalist);
-
-  let categoryInput = document.createElement("INPUT");
-  categoryInput.id = "cat_input_" + row.id;
-  categoryInput.setAttribute('list', datalistId);
-
-  let categoryButton = document.createElement("INPUT");
-  categoryButton.id = "cat_add_button_" + row.id;
-  categoryButton.value = "+";
-  categoryButton.type = "button";
-  categoryButton.addEventListener("click", cat_add_click);
-
   cell = row.insertCell(row.cells.length);
   cell.id = "cat_dl_cell_" + row.id;
-  cell.appendChild(categoryInput);
-  cell.appendChild(categoryDatalist);
-  cell.appendChild(categoryButton);
+
+  if(!isParent){
+    let datalistId = "cat_dl_" + row.id;
+
+    let categoryDatalist = document.createElement("DATALIST");
+    categoryDatalist.id = datalistId;
+    add_categories_to_datalist(categoryDatalist);
+
+    let categoryInput = document.createElement("INPUT");
+    categoryInput.id = "cat_input_" + row.id;
+    categoryInput.setAttribute('list', datalistId);
+
+    let categoryButton = document.createElement("INPUT");
+    categoryButton.id = "cat_add_button_" + row.id;
+    categoryButton.value = "+";
+    categoryButton.type = "button";
+    categoryButton.addEventListener("click", cat_add_click);
+
+    cell.appendChild(categoryInput);
+    cell.appendChild(categoryDatalist);
+    cell.appendChild(categoryButton);
+  }
 
   if(isParent || !isChild){
     console.log("isParent: " + isParent + ", !isChild: " + !isChild);
