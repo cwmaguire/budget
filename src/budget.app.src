@@ -3,7 +3,10 @@
     {vsn, "0.1.0"},
     {id, "git"},
     {modules,
-     [budget_web_transaction_h,
+     [budget_app,
+      budget_sup,
+      budget_db,
+      budget_web_transaction_h,
       budget_web_transaction_category_h,
       budget_web_category_h,
       budget_query]},
@@ -13,7 +16,8 @@
         stdlib,
         cowboy,
         jsx,
-        xxhash
+        xxhash,
+        epgsql
     ]},
     {mod, {budget_app, []}},
     {env, []}

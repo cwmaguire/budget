@@ -7,7 +7,8 @@
 -export([query/3]).
 
 connect() ->
-    {ok, [DbOpts]} = file:consult("db_opts"),
+    PrivDir = code:priv_dir(budget),
+    {ok, [DbOpts]} = file:consult(PrivDir ++ "/db_opts"),
     connect(DbOpts).
 
 connect(Opts) ->
