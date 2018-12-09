@@ -220,19 +220,26 @@ function create_tx_row(tbody, obj, pos){
     cell.appendChild(categoryButton);
   }
 
-  if(isParent || !isChild){
-    let value = isParent ? "split again" : "split";
-    let splitButton = document.createElement("INPUT");
-    let eventHandler = isParent ? tx_split_click : tx_split_add_click;
-    splitButton.id = "tx_split_button_" + row.id;
-    splitButton.value = value;
-    splitButton.type = "button";
-    splitButton.addEventListener("click", tx_split_click);
-
-    cell = row.insertCell(row.cells.length);
-    cell.id = "tx_split_cell_" + row.id;
-    cell.appendChild(splitButton);
+  //let value = !isParent ? isChild ? "split again" : "split";
+  let splitButton = document.createElement("INPUT");
+  if(isChild){
+    splitButton.value = "delete";
+    eventHandler = tx_delete;
+  }else if(isParent){
+    splitButton.value = "split again";
+    eventHandler = tx_split_add_click;
+  }else{
+    splitButton.value = "split";
+    eventHandler = tx_split_click;
   }
+  splitButton.id = "tx_split_button_" + row.id;
+  splitButton.value = value;
+  splitButton.type = "button";
+  splitButton.addEventListener("click", tx_split_click);
+
+  cell = row.insertCell(row.cells.length);
+  cell.id = "tx_split_cell_" + row.id;
+  cell.appendChild(splitButton);
 
   row.style.cursor = "pointer";
 }
@@ -454,6 +461,10 @@ function tx_split_add_click(event){
   add_tx_children(event, 1);
 }
 
+function tx_delete(event){
+  http_delete("transaction/", del_tx_child);
+}
+
 function add_tx_children(event, count){
   let button = event.target;
   let row = button.parentElement.parentElement;
@@ -462,6 +473,10 @@ function add_tx_children(event, count){
     let kvs = "tx_id=" + txId + "&callback=transactions" + i
     http_post("transaction", kvs, callback_function(row, i));
   }
+}
+
+function(){
+  // TODO remove child row
 }
 
 function callback_function(row, i){
@@ -480,7 +495,6 @@ function add_transaction_row(parentRow, objs){
   let table = elem_by_id("table1");
   let tbody = table.tBodies[0];
   let index = parentRow.rowIndex;
-  console.log("add_transaction_rwo: index = " + index);
 
   create_tx_row(tbody, obj, index);
 }
