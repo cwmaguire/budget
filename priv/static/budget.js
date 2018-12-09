@@ -221,7 +221,6 @@ function create_tx_row(tbody, obj, pos){
   }
 
   if(isParent || !isChild){
-    console.log("isParent: " + isParent + ", !isChild: " + !isChild);
     let value = isParent ? "split again" : "split";
     let splitButton = document.createElement("INPUT");
     let eventHandler = isParent ? tx_split_click : tx_split_add_click;
@@ -321,7 +320,6 @@ function select_row(rowId){
   selectedRowIds.push(rowId);
   checkboxes[rowId].checked = true;
   let row = elem_by_id(rowId);
-  console.log("Row className is " + row.className);
   row.className = row.className + "Selected";
   elem_by_id("allOrNone").checked = true;
 }
@@ -442,7 +440,6 @@ function category_click(event){
 }
 
 function tx_split_click(event){
-  console.log("tx_split_click");
   let row = event.target.parentElement.parentElement;
   add_tx_children(event, 2);
   event.target.value = "add split";
@@ -453,7 +450,6 @@ function tx_split_click(event){
 }
 
 function tx_split_add_click(event){
-  console.log("tx_split_add_click");
   add_tx_children(event, 1);
 }
 
@@ -483,8 +479,9 @@ function add_transaction_row(parentRow, objs){
   let table = elem_by_id("table1");
   let tbody = table.tBodies[0];
   let index = parentRow.rowIndex;
+  console.log("add_transaction_rwo: index = " + index);
 
-  create_tx_row(tbody, obj, true, index);
+  create_tx_row(tbody, obj, index);
 }
 
 function clear_categories(row){
