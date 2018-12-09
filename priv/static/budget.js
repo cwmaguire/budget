@@ -447,6 +447,7 @@ function tx_split_click(event){
   event.target.onclick = tx_split_add_click;
   clear_categories(row);
   disable_row(row);
+  row.className = "parent";
 }
 
 function tx_split_add_click(event){
