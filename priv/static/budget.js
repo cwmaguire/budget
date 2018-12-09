@@ -501,5 +501,5 @@ function delete_category(catSpan){
 }
 
 function disable_row(row){
-
+  row.cells[11].childNodes.forEach(function (e){ e.remove(); });
 }
