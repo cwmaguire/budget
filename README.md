@@ -1,12 +1,13 @@
 # budget
-Code to import banking spreadsheets and categorize transactions
+"budget" is a budgeting web app to answer the question: "How much have I spent?"
 
-I need to check my budget everyday but Mint isn't cutting it. I want to
-be able to download my transactions, import them and the categorize them
-based on patterns that I input. The transactions will go into a database
-table so I can query for transactions by category and date. The category
-will be handled by a separate query so that a single transaction can be
-in multiple categories.
+I want to be able to download my transactions, import them and the categorize them based on patterns that I specify.
+
+### Goals
+- Graph spending according to cagtegories
+- Categorize spending, automate as much as possible
+- Split transactions so they can go into multiple cateogories
+- Import transactions CSV spreadsheets
 
 ### Features:
 - parse CSVs from one institution
@@ -24,4 +25,9 @@ in multiple categories.
 -- apply new rules to existing transactions
 - parse transactions from another institution.
 
-
+### Tools
+- Erlang
+-- Cowboy web server
+- JavaScript
+- HTML
+- CSS
