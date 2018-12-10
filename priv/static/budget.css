@@ -27,3 +27,7 @@ body {font-size: 80%; }
 .category:hover {
   background-color: lightblue;
 }
+
+.delete{
+  background-image: url('images/trash.jpg');
+}

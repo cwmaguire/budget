@@ -111,6 +111,10 @@ function load_transactions(){
   cell.bgColor = lightGrey;
 
   cell = headerRow.insertCell(headerRow.cells.length);
+  cell.innerHTML = "delete";
+  cell.bgColor = lightGrey;
+
+  cell = headerRow.insertCell(headerRow.cells.length);
   cell.innerHTML = "split";
   cell.bgColor = lightGrey;
 
@@ -138,6 +142,7 @@ function create_tx_row(tbody, obj, pos){
   let cell;
   let val;
   let cats;
+  let splitEventHandler
   let categorySpans;
   let isParent = Boolean(obj.is_parent);
   let isChild = Boolean(obj.parent);
@@ -195,6 +200,7 @@ function create_tx_row(tbody, obj, pos){
     cell.addEventListener("click", cell_mouse_click);
   }
 
+  // Category cell (or empty if parent)
   cell = row.insertCell(row.cells.length);
   cell.id = "cat_dl_cell_" + row.id;
 
@@ -220,26 +226,35 @@ function create_tx_row(tbody, obj, pos){
     cell.appendChild(categoryButton);
   }
 
-  //let value = !isParent ? isChild ? "split again" : "split";
-  let splitButton = document.createElement("INPUT");
-  if(isChild){
-    splitButton.value = "delete";
-    eventHandler = tx_delete;
-  }else if(isParent){
-    splitButton.value = "split again";
-    eventHandler = tx_split_add_click;
-  }else{
-    splitButton.value = "split";
-    eventHandler = tx_split_click;
-  }
-  splitButton.id = "tx_split_button_" + row.id;
-  splitButton.value = value;
-  splitButton.type = "button";
-  splitButton.addEventListener("click", tx_split_click);
+  // Delete Button
+  let deleteButton = document.createElement("INPUT");
+  //deleteButton.value = "delete";
+  deleteButton.id = "tx_split_button_" + row.id;
+  deleteButton.type = "button";
+  deleteButton.className = "delete";
+  deleteButton.addEventListener("click", tx_delete_click);
 
   cell = row.insertCell(row.cells.length);
+  cell.id = "tx_delete_cell_" + row.id;
+  cell.appendChild(deleteButton);
+
+  // Split Button (or blank for child rows)
+  cell = row.insertCell(row.cells.length);
   cell.id = "tx_split_cell_" + row.id;
-  cell.appendChild(splitButton);
+  if(isParent || !isChild){
+    let splitButton = document.createElement("INPUT");
+    if(isParent){
+      splitButton.value = "split again";
+      splitButton.addEventListener("click", tx_split_add_click);
+    }else if(!isChild){
+      splitButton.value = "split";
+      splitButton.addEventListener("click", tx_split_click);
+    }
+    splitButton.id = "tx_split_button_" + row.id;
+    splitButton.type = "button";
+
+    cell.appendChild(splitButton);
+  }
 
   row.style.cursor = "pointer";
 }
@@ -461,8 +476,10 @@ function tx_split_add_click(event){
   add_tx_children(event, 1);
 }
 
-function tx_delete(event){
-  http_delete("transaction/", del_tx_child);
+function tx_delete_click(event){
+  let row = event.target.parentElement.parentElement;
+  console.log("Delete transaction " + row.id);
+  http_delete("transaction/" + row.id, function(){ del_tx_child(row) });
 }
 
 function add_tx_children(event, count){
@@ -475,8 +492,8 @@ function add_tx_children(event, count){
   }
 }
 
-function(){
-  // TODO remove child row
+function del_tx_child(row){
+  row.remove();
 }
 
 function callback_function(row, i){

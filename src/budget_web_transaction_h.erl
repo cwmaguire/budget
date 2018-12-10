@@ -6,6 +6,7 @@
 -export([content_types_provided/2]).
 -export([content_types_accepted/2]).
 -export([resource_exists/2]).
+-export([delete_resource/2]).
 
 %% Custom callbacks.
 -export([budget_post/2]).
@@ -16,7 +17,7 @@ init(Req, Opts) ->
 	{cowboy_rest, Req, Opts}.
 
 allowed_methods(Req, State) ->
-	{[<<"GET">>, <<"POST">>], Req, State}.
+	{[<<"GET">>, <<"POST">>, <<"DELETE">>], Req, State}.
 
 content_types_provided(Req, State) ->
 	{[
@@ -250,6 +251,28 @@ serialize({{Y, M, D}, {H, Min, S}}) ->
     [i2l(Y), i2l(M), i2l(D), i2l(H), i2l(Min), i2l(S)];
 serialize(List) ->
     List.
+
+delete_resource(Req, State) ->
+    io:format(user, "Req = ~p~n", [Req]),
+    TxId = cowboy_req:binding(tx_id, Req),
+
+    io:format("Deleting categories for transaction ~p~n", [TxId]),
+    DeleteTxCatSql = "delete from transaction_category "
+                     "where tx_id = $1; ",
+    _ = budget_query:update(DeleteTxCatSql, [TxId]),
+
+    io:format("Deleting transaction ~p~n", [TxId]),
+    DeleteTxSql = "delete from transaction "
+                  "where id = $1; ",
+    Return = budget_query:update(DeleteTxSql, [TxId]),
+    io:format(user, "Return = ~p~n", [Return]),
+
+    case Return of
+        Count when Count > 0 ->
+            {true, Req, State};
+        _ ->
+            {false, Req, State}
+    end.
 
 i2l(I) ->
     integer_to_list(I).

@@ -9,7 +9,7 @@ create table transaction(
   desc_2    varchar,
   cad float,
   usd float,
-  parent numeric,
+  parent numeric references transact(id),
   child_number);
 
 create table transaction_child_number(
