@@ -30,4 +30,6 @@ body {font-size: 80%; }
 
 .delete{
   background-image: url('images/trash.jpg');
+  background-size: 15px;
+  background-repeat: no-repeat;
 }
