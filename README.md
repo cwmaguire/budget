@@ -8,9 +8,20 @@ table so I can query for transactions by category and date. The category
 will be handled by a separate query so that a single transaction can be
 in multiple categories.
 
-So far I can parse CSVs from one bank, fetch transactions and draw them
-in a table, add categories to transactions and delete them.
+### Features:
+- parse CSVs from one institution
+- fetch transactions
+- render transactions in a table
+- add/delete transaction categories
+- "split" transactions
+-- add/delete child transactions
+-- enable/disable editing of parent transactions
 
-I still need to split transactions, add auto-category rules, apply new
-rules to existing transactions and parse transactions from another
-institution.
+### Todo:
+- delete multiple transactions
+- add categories to multiple transactions
+- auto-category rule editor
+-- apply new rules to existing transactions
+- parse transactions from another institution.
+
+
