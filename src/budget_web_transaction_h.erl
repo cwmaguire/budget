@@ -32,12 +32,13 @@ resource_exists(Req, State) ->
     case cowboy_req:method(Req) of
         <<"GET">> ->
             QsVals = cowboy_req:parse_qs(Req),
-            %io:format(user, "QsVals = ~p~n", [QsVals]),
-            case lists:keyfind(<<"tx">>, 1, QsVals) of
-                {_, Tx} ->
-                    %TxExists = tx_exists(b2i(Tx)),
-                    %io:format(user, "TxExists = ~p~n", [TxExists]),
+            MaybeTxKey = lists:keyfind(<<"tx">>, 1, QsVals),
+            MaybeParentKey = lists:keyfind(<<"parent">>, 1, QsVals),
+            case {MaybeTxKey, MaybeParentKey} of
+                {{_, Tx}, _} ->
                     {tx_exists(b2i(Tx)), Req, State};
+                {_, {_, Parent}} ->
+                    {tx_exists(b2i(Parent)), Req, State};
                 _ ->
                     {true, Req, State}
             end;
@@ -82,11 +83,18 @@ kvs(_, KVs) ->
 %budget_get(Req, #{from_date := From, to_date := To}) ->
 fetch(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
-    case lists:keyfind(<<"tx_id">>, 1, QsVals) of
-      false ->
-          fetch_transactions_by_date(QsVals, Req, State);
-      {<<"tx_id">>, _TxId} ->
-          fetch_transaction(QsVals, Req, State)
+
+    MaybeTxKey = lists:keyfind(<<"tx_id">>, 1, QsVals),
+
+    MaybeParentKey = lists:keyfind(<<"parent">>, 1, QsVals),
+
+    case {MaybeTxKey, MaybeParentKey} of
+      {{<<"tx_id">>, _TxId}, _} ->
+          fetch_transaction(QsVals, Req, State);
+      {_, {<<"parent">>, _Parent}} ->
+          fetch_children(QsVals, Req, State);
+      _ ->
+          fetch_transactions_by_date(QsVals, Req, State)
     end.
 
 fetch_transaction(QsVals, Req, State) ->
@@ -111,7 +119,19 @@ fetch_transactions_by_date(QsVals, Req, State) ->
     Script = budget_query:fetch_jsonp(Sql,
                                       Params,
                                       Callback),
+	{Script, Req, State}.
 
+fetch_children(QsVals, Req, State) ->
+    {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
+    {_, Parent} = lists:keyfind(<<"parent">>, 1, QsVals),
+
+    Sql = "select count(*) \"count\" "
+          "from transaction "
+          "where parent = $1;",
+    Params = [Parent],
+    Script = budget_query:fetch_jsonp(Sql,
+                                      Params,
+                                      Callback),
 	{Script, Req, State}.
 
 tx_query(WhereClause) ->
@@ -253,26 +273,27 @@ serialize(List) ->
     List.
 
 delete_resource(Req, State) ->
-    io:format(user, "Req = ~p~n", [Req]),
     TxId = cowboy_req:binding(tx_id, Req),
 
-    io:format("Deleting categories for transaction ~p~n", [TxId]),
     DeleteTxCatSql = "delete from transaction_category "
                      "where tx_id = $1; ",
-    _ = budget_query:update(DeleteTxCatSql, [TxId]),
+    budget_query:update(DeleteTxCatSql, [TxId]),
 
-    io:format("Deleting transaction ~p~n", [TxId]),
     DeleteTxSql = "delete from transaction "
-                  "where id = $1; ",
-    Return = budget_query:update(DeleteTxSql, [TxId]),
-    io:format(user, "Return = ~p~n", [Return]),
+                  "where id = $1 "
+                  "returning parent; ",
+    Parent = budget_query:update(DeleteTxSql, [TxId]),
 
-    case Return of
-        Count when Count > 0 ->
-            {true, Req, State};
-        _ ->
-            {false, Req, State}
-    end.
+    DeleteTxChildNumSql = "delete from transaction_child_number txcn "
+                          "where not exists "
+                          "(select null "
+                          " from transaction "
+                          " where parent = txcn.tx_id)",
+    budget_query:update(DeleteTxChildNumSql, []),
+
+    Req1 = cowboy_req:set_resp_body(Parent, Req),
+
+    {true, Req1, State}.
 
 i2l(I) ->
     integer_to_list(I).

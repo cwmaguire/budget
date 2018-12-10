@@ -32,11 +32,7 @@ fetch_value(Sql, Params) ->
             undefined
     end.
 
-%tuples_to_lists(Tuples) ->
-    %[tuple_to_list(Tuple) || Tuple <- Tuples].
-
 update(Sql, Params) ->
-    %io:format("Calling update with Params: ~p~n", [Params]),
     {ok, Conn} = budget_db:connect(),
     Return =
     case budget_db:query(Conn, Sql, Params) of

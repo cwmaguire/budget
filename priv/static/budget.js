@@ -205,31 +205,13 @@ function create_tx_row(tbody, obj, pos){
   cell.id = "cat_dl_cell_" + row.id;
 
   if(!isParent){
-    let datalistId = "cat_dl_" + row.id;
-
-    let categoryDatalist = document.createElement("DATALIST");
-    categoryDatalist.id = datalistId;
-    add_categories_to_datalist(categoryDatalist);
-
-    let categoryInput = document.createElement("INPUT");
-    categoryInput.id = "cat_input_" + row.id;
-    categoryInput.setAttribute('list', datalistId);
-
-    let categoryButton = document.createElement("INPUT");
-    categoryButton.id = "cat_add_button_" + row.id;
-    categoryButton.value = "+";
-    categoryButton.type = "button";
-    categoryButton.addEventListener("click", cat_add_click);
-
-    cell.appendChild(categoryInput);
-    cell.appendChild(categoryDatalist);
-    cell.appendChild(categoryButton);
+    add_category_controls(cell, row.id);
   }
 
   // Delete Button
   let deleteButton = document.createElement("INPUT");
   //deleteButton.value = "delete";
-  deleteButton.id = "tx_split_button_" + row.id;
+  deleteButton.id = "tx_delete_button_" + row.id;
   deleteButton.type = "button";
   deleteButton.className = "delete";
   deleteButton.addEventListener("click", tx_delete_click);
@@ -257,6 +239,28 @@ function create_tx_row(tbody, obj, pos){
   }
 
   row.style.cursor = "pointer";
+}
+
+function add_category_controls(cell, tx_id){
+  let datalistId = "cat_dl_" + tx_id;
+
+  let categoryDatalist = document.createElement("DATALIST");
+  categoryDatalist.id = datalistId;
+  add_categories_to_datalist(categoryDatalist);
+
+  let categoryInput = document.createElement("INPUT");
+  categoryInput.id = "cat_input_" + tx_id;
+  categoryInput.setAttribute('list', datalistId);
+
+  let categoryButton = document.createElement("INPUT");
+  categoryButton.id = "cat_add_button_" + tx_id;
+  categoryButton.value = "+";
+  categoryButton.type = "button";
+  categoryButton.addEventListener("click", cat_add_click);
+
+  cell.appendChild(categoryInput);
+  cell.appendChild(categoryDatalist);
+  cell.appendChild(categoryButton);
 }
 
 function add_categories_to_datalist(datalist){
@@ -478,8 +482,11 @@ function tx_split_add_click(event){
 
 function tx_delete_click(event){
   let row = event.target.parentElement.parentElement;
-  console.log("Delete transaction " + row.id);
-  http_delete("transaction/" + row.id, function(){ del_tx_child(row) });
+  http_delete(
+    "transaction/" + row.id,
+    function(parent){
+      del_tx_child(row, parent)
+    });
 }
 
 function add_tx_children(event, count){
@@ -492,18 +499,55 @@ function add_tx_children(event, count){
   }
 }
 
-function del_tx_child(row){
+function del_tx_child(row, parent){
   row.remove();
+  if(parent){
+    if_not_has_children(
+      parent,
+      function(){
+        unparent_row(parent)
+      });
+  }
+}
+
+function if_not_has_children(parent, fun){
+  http_get("transaction?parent=" + parent + "&callback=child_counts",
+           function (jsonp){
+             use_script(
+               jsonp,
+               function(){
+                 if(child_counts()[0].count < 1){
+                   fun();
+                 }
+               });
+           });
+}
+
+function use_script(jsonp, fun){
+  let s = document.createElement("SCRIPT");
+  s.text = jsonp;
+  document.body.appendChild(s);
+  fun();
+  s.remove();
+}
+
+function unparent_row(tx_id){
+  let row = elem_by_id(tx_id);
+  row.className = "";
+  let splitButton = elem_by_id("tx_split_button_" + tx_id);
+  splitButton.value = "split";
+  let cell = elem_by_id("cat_dl_cell_" + tx_id);
+  add_category_controls(cell, tx_id);
 }
 
 function callback_function(row, i){
   let f = function(jsonp){
-            let s = document.createElement("SCRIPT");
-            s.text = jsonp;
-            document.body.appendChild(s);
+    use_script(
+      jsonp,
+      function(){
             add_transaction_row(row, window["transactions" + i]());
-            s.remove();
-          };
+      });
+  };
   return f;
 }
 
