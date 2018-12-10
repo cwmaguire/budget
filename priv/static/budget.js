@@ -208,17 +208,13 @@ function create_tx_row(tbody, obj, pos){
     add_category_controls(cell, row.id);
   }
 
-  // Delete Button
-  let deleteButton = document.createElement("INPUT");
-  //deleteButton.value = "delete";
-  deleteButton.id = "tx_delete_button_" + row.id;
-  deleteButton.type = "button";
-  deleteButton.className = "delete";
-  deleteButton.addEventListener("click", tx_delete_click);
-
   cell = row.insertCell(row.cells.length);
   cell.id = "tx_delete_cell_" + row.id;
-  cell.appendChild(deleteButton);
+
+  if(!isParent){
+    add_delete_button(cell, row.id);
+  }
+
 
   // Split Button (or blank for child rows)
   cell = row.insertCell(row.cells.length);
@@ -261,6 +257,16 @@ function add_category_controls(cell, tx_id){
   cell.appendChild(categoryInput);
   cell.appendChild(categoryDatalist);
   cell.appendChild(categoryButton);
+}
+
+function add_delete_button(cell, tx_id){
+  let deleteButton = document.createElement("INPUT");
+  //deleteButton.value = "delete";
+  deleteButton.id = "tx_delete_button_" + tx_id;
+  deleteButton.type = "button";
+  deleteButton.className = "delete";
+  deleteButton.addEventListener("click", tx_delete_click);
+  cell.appendChild(deleteButton);
 }
 
 function add_categories_to_datalist(datalist){
@@ -536,8 +542,12 @@ function unparent_row(tx_id){
   row.className = "";
   let splitButton = elem_by_id("tx_split_button_" + tx_id);
   splitButton.value = "split";
-  let cell = elem_by_id("cat_dl_cell_" + tx_id);
-  add_category_controls(cell, tx_id);
+  splitButton.removeEventListener("click", tx_split_add_click);
+  splitButton.onclick = tx_split_click;
+  let catCell = elem_by_id("cat_dl_cell_" + tx_id);
+  add_category_controls(catCell, tx_id);
+  let deleteCell = elem_by_id("tx_delete_cell_" + tx_id);
+  add_delete_button(deleteCell, tx_id);
 }
 
 function callback_function(row, i){
@@ -576,5 +586,8 @@ function delete_category(catSpan){
 }
 
 function disable_row(row){
-  row.cells[11].childNodes.forEach(function (e){ e.remove(); });
+  [11,12].forEach(
+    function(i){
+      row.cells[i].childNodes.forEach(function (e){ e.remove(); });
+    });
 }

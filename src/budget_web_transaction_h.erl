@@ -62,7 +62,6 @@ budget_post(Req, State) ->
     Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
     Callback = proplists:get_value("callback", KVs),
     Hash = copy_parent(Tx),
-    %io:format("Returning ~p~n", [Hash]),
     URL = <<"/transaction?tx_id=",
             (integer_to_binary(Hash))/binary,
             "&callback=",
@@ -92,7 +91,7 @@ fetch(Req, State) ->
       {{<<"tx_id">>, _TxId}, _} ->
           fetch_transaction(QsVals, Req, State);
       {_, {<<"parent">>, _Parent}} ->
-          fetch_children(QsVals, Req, State);
+          count_children(QsVals, Req, State);
       _ ->
           fetch_transactions_by_date(QsVals, Req, State)
     end.
@@ -121,7 +120,7 @@ fetch_transactions_by_date(QsVals, Req, State) ->
                                       Callback),
 	{Script, Req, State}.
 
-fetch_children(QsVals, Req, State) ->
+count_children(QsVals, Req, State) ->
     {_, Callback} = lists:keyfind(<<"callback">>, 1, QsVals),
     {_, Parent} = lists:keyfind(<<"parent">>, 1, QsVals),
 
@@ -196,9 +195,7 @@ copy_parent(ParentId) ->
                 "from transaction "
                 "where id = $1;",
 
-    %io:format("Self = ~p~n", [self()]),
     [Child0] = budget_query:fetch(ParentSql, [ParentId]),
-    %io:format(user, "Child0 = ~p~n", [Child0]),
 
     NumChildrenSql = "insert into transaction_child_number "
                      "(tx_id, child_number) "
@@ -209,7 +206,6 @@ copy_parent(ParentId) ->
                      "returning transaction_child_number.child_number;",
 
     NumChildren = budget_query:update(NumChildrenSql, [ParentId]),
-    %io:format(user, "NumChildren = ~p~n", [NumChildren]),
 
     {Date, _} = proplists:get_value(<<"date">>, Child0),
     Child1 = lists:keystore(<<"date">>,
@@ -233,7 +229,6 @@ copy_parent(ParentId) ->
                             {child_number, NumChildren}),
 
     Values = [V || {_K, V} <- Child3],
-    %io:format(user, "Values = ~p~n", [Values]),
 
     InsertSql = "insert into transaction "
                 "(id, acct_type, acct_num, date, "
@@ -243,16 +238,12 @@ copy_parent(ParentId) ->
                 "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);",
 
     HashedChild1 = [Hash | _] = hashed_record(Values),
-    %io:format(user, "Parent ID = ~p~n", [ParentId]),
-    %io:format(user, "HashedChild1 = ~p~n", [HashedChild1]),
     1 = budget_query:update(InsertSql, HashedChild1),
     Hash.
 
 
 hashed_record(Rec) ->
-    %io:format(user, "Rec = ~p~n", [Rec]),
     Strings = [serialize(Field) || Field <- Rec],
-    %io:format(user, "Strings = ~p~n", [Strings]),
     String = lists:flatten(Strings),
     Hash = xxhash:hash64(String),
     [Hash | Rec].
@@ -291,7 +282,12 @@ delete_resource(Req, State) ->
                           " where parent = txcn.tx_id)",
     budget_query:update(DeleteTxChildNumSql, []),
 
-    Req1 = cowboy_req:set_resp_body(Parent, Req),
+    Req1 = case Parent of
+               null ->
+                   cowboy_req:set_resp_body("", Req);
+               _ ->
+                   cowboy_req:set_resp_body(Parent, Req)
+           end,
 
     {true, Req1, State}.
 

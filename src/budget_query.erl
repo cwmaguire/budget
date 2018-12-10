@@ -39,7 +39,9 @@ update(Sql, Params) ->
         {ok, NumUpdated} ->
              NumUpdated;
         {ok, _Count, _Columns, [{Value}]} ->
-             Value
+             Value;
+        {ok, 0, _, _} ->
+            null
     end,
     budget_db:close(Conn),
     Return.
