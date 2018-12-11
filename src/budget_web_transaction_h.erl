@@ -9,7 +9,7 @@
 -export([delete_resource/2]).
 
 %% Custom callbacks.
--export([budget_post/2]).
+-export([create_or_update_tx/2]).
 -export([fetch/2]).
 -export([fix_dates/1]).
 
@@ -17,7 +17,7 @@ init(Req, Opts) ->
 	{cowboy_rest, Req, Opts}.
 
 allowed_methods(Req, State) ->
-	{[<<"GET">>, <<"POST">>, <<"DELETE">>], Req, State}.
+	{[<<"GET">>, <<"PUT">>, <<"POST">>, <<"DELETE">>], Req, State}.
 
 content_types_provided(Req, State) ->
 	{[
@@ -25,7 +25,7 @@ content_types_provided(Req, State) ->
 	], Req, State}.
 
 content_types_accepted(Req, State) ->
-	{[{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, budget_post}],
+	{[{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, create_or_update_tx}],
 		Req, State}.
 
 resource_exists(Req, State) ->
@@ -42,10 +42,15 @@ resource_exists(Req, State) ->
                 _ ->
                     {true, Req, State}
             end;
-        <<"POST">> ->
+        Method = <<"P", _/binary>> ->
             {ok, Body, Req1} = cowboy_req:read_body(Req),
             KVs = kvs(Body),
-            Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
+            Tx = case Method of
+                     <<"POST">> ->
+                         list_to_integer(proplists:get_value("tx_id", KVs));
+                     <<"PUT">> ->
+                         cowboy_req:binding(tx_id, Req)
+                 end,
             {tx_exists(Tx), Req1, [{kvs, KVs} | State]};
         _ ->
             {true, Req, State}
@@ -57,16 +62,25 @@ tx_exists(TxId) ->
           "where t.id = $1; ",
     TxId == b2i(budget_query:fetch_value(Sql, [TxId])).
 
-budget_post(Req, State) ->
+create_or_update_tx(Req, State) ->
     KVs = proplists:get_value(kvs, State),
-    Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
-    Callback = proplists:get_value("callback", KVs),
-    Hash = copy_parent(Tx),
-    URL = <<"/transaction?tx_id=",
-            (integer_to_binary(Hash))/binary,
-            "&callback=",
-            (list_to_binary(Callback))/binary>>,
-    {{true, URL}, Req, State}.
+    case cowboy_req:method(Req) of
+        <<"POST">> ->
+            Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
+            Callback = proplists:get_value("callback", KVs),
+            Hash = copy_parent(Tx),
+            URL = <<"/transaction?tx_id=",
+                    (integer_to_binary(Hash))/binary,
+                    "&callback=",
+                    (list_to_binary(Callback))/binary>>,
+            {{true, URL}, Req, State};
+        <<"PUT">> ->
+            Tx = cowboy_req:binding(tx_id, Req),
+            Cad = to_float(proplists:get_value("cad", KVs)),
+            Usd = to_float(proplists:get_value("usd", KVs)),
+            update_tx(Tx, Cad, Usd),
+            {true, Req, State}
+    end.
 
 kvs(Binary) ->
     Bins = binary:split(Binary, [<<"&">>, <<"=">>], [global]),
@@ -291,8 +305,20 @@ delete_resource(Req, State) ->
 
     {true, Req1, State}.
 
+update_tx(Tx, Cad, Usd) ->
+    UpdateSql = "update transaction "
+                "set cad = $1, usd = $2 "
+                "where id = $3;",
+
+    budget_query:update(UpdateSql, [Cad, Usd, Tx]).
+
+
 i2l(I) ->
     integer_to_list(I).
 
 b2i(Bin) ->
     list_to_integer(binary_to_list(Bin)).
+
+to_float(List) ->
+    %% TODO figure out if it's an int or a float and convert it.
+    case 

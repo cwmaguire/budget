@@ -193,6 +193,16 @@ function create_tx_row(tbody, obj, pos){
       k == "child_number" ||
       k == "is_parent"){
       continue;
+    } else if((k == "cad" || k == "usd") && isChild){
+      cell = row.insertCell(row.cells.length);
+      cell.id = "cell_" + k + "_" + row.id;
+
+      var amountText = document.createElement("INPUT");
+      amountText.setAttribute("type", "text");
+      amountText.value = val;
+      amountText.addEventListener("change", amount_text_change);
+      cell.appendChild(amountText);
+      continue;
     }
     cell = row.insertCell(row.cells.length);
     cell.id = "cell_" + k + "_" + row.id;
@@ -590,4 +600,15 @@ function disable_row(row){
     function(i){
       row.cells[i].childNodes.forEach(function (e){ e.remove(); });
     });
+}
+
+function amount_text_change(event){
+  let row = event.target.parentElement.parentElement;
+  let cad = row.cells[8].childNodes[0].value;
+  let usd = row.cells[9].childNodes[0].value;
+  http_put(
+    "transaction/" + row.id,
+    "cad=" + cad + "&usd=" + usd,
+    function(){}
+  );
 }
