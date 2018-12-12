@@ -76,8 +76,8 @@ create_or_update_tx(Req, State) ->
             {{true, URL}, Req, State};
         <<"PUT">> ->
             Tx = cowboy_req:binding(tx_id, Req),
-            Cad = to_float(proplists:get_value("cad", KVs)),
-            Usd = to_float(proplists:get_value("usd", KVs)),
+            Cad = maybe_float(proplists:get_value("cad", KVs)),
+            Usd = maybe_float(proplists:get_value("usd", KVs)),
             update_tx(Tx, Cad, Usd),
             {true, Req, State}
     end.
@@ -319,6 +319,11 @@ i2l(I) ->
 b2i(Bin) ->
     list_to_integer(binary_to_list(Bin)).
 
+maybe_float("") ->
+    null;
+maybe_float(Float) ->
+    to_float(Float).
+
 to_float(List) ->
     %% TODO figure out if it's an int or a float and convert it.
-    case 
+    list_to_float(List).

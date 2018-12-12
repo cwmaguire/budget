@@ -604,11 +604,45 @@ function disable_row(row){
 
 function amount_text_change(event){
   let row = event.target.parentElement.parentElement;
-  let cad = row.cells[8].childNodes[0].value;
-  let usd = row.cells[9].childNodes[0].value;
-  http_put(
-    "transaction/" + row.id,
-    "cad=" + cad + "&usd=" + usd,
-    function(){}
-  );
+  let cadText = row.cells[8].childNodes[0];
+  let cad = cadText.value;
+  let usdText = row.cells[9].childNodes[0];
+  let usd = usdText.value;
+  let isValid = true;
+
+  if(cad.length > 0 && !is_float(cad)){
+    cadText.className = "invalid";
+    isValid = false;
+  }else{
+    cadText.className = "";
+  }
+
+  if(usd.length > 0 && !is_float(usd)){
+    usdText.className = "invalid";
+    isValid = false;
+  }else{
+    usdText.className = "";
+  }
+
+  if(isValid){
+    cadText.className = "";
+    usdText.className = "";
+    http_put(
+      "transaction/" + row.id,
+      "cad=" + cad + "&usd=" + usd,
+      function(){}
+    );
+  }
+}
+
+function is_float(maybeFloat){
+  return !isNaN(parseFloat(maybeFloat));
+}
+
+function add_decimal(number){
+  if(number.indexOf(".") == -1){
+    return number + ".0";
+  }else{
+    return number;
+  }
 }
