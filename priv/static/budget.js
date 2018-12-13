@@ -107,21 +107,16 @@ function load_transactions(){
     cell.bgColor = lightGrey;
   }
 
-  cell = headerRow.insertCell(headerRow.cells.length);
-  cell.innerHTML = "add category";
-  cell.bgColor = lightGrey;
-
-  cell = headerRow.insertCell(headerRow.cells.length);
-  cell.innerHTML = "delete";
-  cell.bgColor = lightGrey;
-
-  cell = headerRow.insertCell(headerRow.cells.length);
-  cell.innerHTML = "split";
-  cell.bgColor = lightGrey;
-
-  cell = headerRow.insertCell(headerRow.cells.length);
-  cell.innerHTML = "note";
-  cell.bgColor = lightGrey;
+  let extraColumns = ["add_category",
+                      "delete",
+                      "split",
+                      "note"];
+  extraColumns.forEach(
+    function(title){
+      cell = headerRow.insertCell(headerRow.cells.length);
+      cell.innerHTML = title;
+      cell.bgColor = lightGrey;
+    });
 
   let tbody = table.createTBody();
 
