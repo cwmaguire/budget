@@ -15,16 +15,16 @@ I want to be able to download my transactions, import them and the categorize th
 - render transactions in a table
 - add/delete transaction categories
 - "split" transactions
--- add/delete child transactions
--- enable/disable editing of parent transactions
--- editable CAD and USD fields
--- editable notes field
+  - add/delete child transactions
+  - enable/disable editing of parent transactions
+- editable CAD and USD fields
+- editable notes field
 
 ### Todo:
 - delete multiple transactions
 - add categories to multiple transactions
 - auto-category rule editor
--- apply new rules to existing transactions
+  - apply new rules to existing transactions
 - parse transactions from another institution.
 
 ### Tools
