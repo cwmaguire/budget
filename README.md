@@ -17,6 +17,8 @@ I want to be able to download my transactions, import them and the categorize th
 - "split" transactions
 -- add/delete child transactions
 -- enable/disable editing of parent transactions
+-- editable CAD and USD fields
+-- editable notes field
 
 ### Todo:
 - delete multiple transactions
