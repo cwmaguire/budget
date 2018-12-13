@@ -98,7 +98,8 @@ function load_transactions(){
     if(key == "id" ||
       key == "parent" ||
       key == "child_number" ||
-      key == "is_parent"){
+      key == "is_parent" ||
+      key == "note"){
       continue;
     }
     cell = headerRow.insertCell(headerRow.cells.length);
@@ -118,6 +119,10 @@ function load_transactions(){
   cell.innerHTML = "split";
   cell.bgColor = lightGrey;
 
+  cell = headerRow.insertCell(headerRow.cells.length);
+  cell.innerHTML = "note";
+  cell.bgColor = lightGrey;
+
   let tbody = table.createTBody();
 
   txs.forEach(table_writer(tbody));
@@ -131,6 +136,14 @@ function table_writer(tbody){
 
 function create_tx_row(tbody, obj, pos){
   let index;
+  let cell;
+  let val;
+  let cats;
+  let splitEventHandler
+  let categorySpans;
+  let isParent = Boolean(obj.is_parent);
+  let isChild = Boolean(obj.parent);
+
   if(pos == 'last'){
     index = -1;
   }else{
@@ -139,13 +152,7 @@ function create_tx_row(tbody, obj, pos){
   let row = tbody.insertRow(index);
   row.id = obj.id;
   rows[row.id] = row;
-  let cell;
-  let val;
-  let cats;
-  let splitEventHandler
-  let categorySpans;
-  let isParent = Boolean(obj.is_parent);
-  let isChild = Boolean(obj.parent);
+  row.style.cursor = "pointer";
 
   if(isParent){
     row.className = "parent";
@@ -165,6 +172,8 @@ function create_tx_row(tbody, obj, pos){
   for(var k in obj){
     val = obj[k];
     if(k == "id"){
+      continue;
+    }else if(k == "note"){
       continue;
     }else if(k == "categories"){
       cell = row.insertCell(row.cells.length);
@@ -225,7 +234,6 @@ function create_tx_row(tbody, obj, pos){
     add_delete_button(cell, row.id);
   }
 
-
   // Split Button (or blank for child rows)
   cell = row.insertCell(row.cells.length);
   cell.id = "tx_split_cell_" + row.id;
@@ -244,7 +252,14 @@ function create_tx_row(tbody, obj, pos){
     cell.appendChild(splitButton);
   }
 
-  row.style.cursor = "pointer";
+  cell = row.insertCell(row.cells.length);
+  cell.id = "tx_note_cell_" + row.id;
+
+  var noteText = document.createElement("INPUT");
+  noteText.setAttribute("type", "text");
+  noteText.value = obj.note;
+  noteText.addEventListener("change", note_text_change);
+  cell.appendChild(noteText);
 }
 
 function add_category_controls(cell, tx_id){
@@ -645,4 +660,17 @@ function add_decimal(number){
   }else{
     return number;
   }
+}
+
+function note_text_change(event){
+  let elem = event.target;
+  let cell = elem.parentElement;
+  let row = cell.parentElement;
+  let noteText = elem.value;
+
+  http_put(
+    "transaction/" + row.id,
+    "note=" + noteText,
+    function(){}
+  );
 }

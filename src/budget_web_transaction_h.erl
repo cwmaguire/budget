@@ -76,9 +76,7 @@ create_or_update_tx(Req, State) ->
             {{true, URL}, Req, State};
         <<"PUT">> ->
             Tx = cowboy_req:binding(tx_id, Req),
-            Cad = maybe_float(proplists:get_value("cad", KVs)),
-            Usd = maybe_float(proplists:get_value("usd", KVs)),
-            update_tx(Tx, Cad, Usd),
+            update_tx(Tx, KVs),
             {true, Req, State}
     end.
 
@@ -159,7 +157,8 @@ tx_query(WhereClause) ->
               "t.cad, "
               "t.usd, "
               "t.parent, "
-              "t.child_number ",
+              "t.child_number, "
+              "t.\"note\" ",
 
     "select t.*, "
     "       string_agg(c.name || '||' || tc.id, ', ') categories, "
@@ -305,13 +304,25 @@ delete_resource(Req, State) ->
 
     {true, Req1, State}.
 
-update_tx(Tx, Cad, Usd) ->
-    UpdateSql = "update transaction "
-                "set cad = $1, usd = $2 "
-                "where id = $3;",
+update_tx(Tx, KVs) ->
+    Keys = [K || {K, _} <- KVs],
+    Values = [fix_type(K, V) || {K, V} <- KVs],
+    UpdateSql = lists:flatten(["update transaction "
+                               "set ",
+                               kv_sql(Keys),
+                               " where id = $",
+                               integer_to_list(length(KVs) + 1)]),
+    budget_query:update(UpdateSql, Values ++ [Tx]).
 
-    budget_query:update(UpdateSql, [Cad, Usd, Tx]).
+kv_sql(Keys) ->
+    ParamNums = lists:seq(1, length(Keys)),
+    KeyNums = lists:zip(Keys, ParamNums),
+    lists:join($,, [[K, " = $", i2l(N)] || {K, N} <- KeyNums]).
 
+fix_type(Key, List) when Key == "can"; Key == "usd" ->
+    maybe_float(List);
+fix_type(_, List) ->
+    list_to_binary(List).
 
 i2l(I) ->
     integer_to_list(I).
@@ -321,8 +332,8 @@ b2i(Bin) ->
 
 maybe_float("") ->
     null;
-maybe_float(Float) ->
-    to_float(Float).
+maybe_float(List) ->
+    to_float(List).
 
 to_float(List) ->
     %% TODO figure out if it's an int or a float and convert it.

@@ -10,7 +10,8 @@ create table transaction(
   cad float,
   usd float,
   parent numeric references transact(id),
-  child_number);
+  child_number,
+  "note" varchar);
 
 create table transaction_child_number(
   tx_id numeric references transaction(id),
