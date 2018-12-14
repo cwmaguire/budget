@@ -25,6 +25,19 @@ function http_post(restPath, postKVs, callback){
   xhr.send(postKVs);
 }
 
+function http_post_file(restPath, file, callback){
+  var xhr = new XMLHttpRequest();
+
+  xhr.addEventListener("progress", update_progress);
+  xhr.addEventListener("load", transfer_complete);
+  xhr.addEventListener("error", transfer_failed);
+  xhr.addEventListener("abort", transfer_canceled);
+  xhr.addEventListener("readystatechange", http_ready_state_change_event_handler(xhr, callback));
+  xhr.open("POST", "http://localhost:8080/" + restPath, true);
+  xhr.setRequestHeader("Content-type", "text/csv")
+  xhr.send(file);
+}
+
 function http_put(restPath, putKVs, callback){
   var xhr = new XMLHttpRequest();
 

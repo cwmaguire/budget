@@ -9,7 +9,9 @@
       budget_web_transaction_h,
       budget_web_transaction_category_h,
       budget_web_category_h,
-      budget_query]},
+      budget_query,
+      budget,
+      budget_parse]},
     {registered, []},
     {applications, [
         kernel,

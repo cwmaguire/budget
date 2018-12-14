@@ -11,6 +11,7 @@
 %% Custom callbacks.
 -export([create_or_update_tx/2]).
 -export([fetch/2]).
+-export([parse_csv/2]).
 -export([fix_dates/1]).
 
 init(Req, Opts) ->
@@ -25,12 +26,15 @@ content_types_provided(Req, State) ->
 	], Req, State}.
 
 content_types_accepted(Req, State) ->
-	{[{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, create_or_update_tx}],
+	{[{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, create_or_update_tx},
+	  {{<<"text">>, <<"csv">>, '*'}, parse_csv}],
 		Req, State}.
 
 resource_exists(Req, State) ->
-    case cowboy_req:method(Req) of
-        <<"GET">> ->
+    Method = cowboy_req:method(Req),
+    ContentType = cowboy_req:header(<<"content-type">>, Req),
+    case {Method, ContentType} of
+        {<<"GET">>, _} ->
             QsVals = cowboy_req:parse_qs(Req),
             MaybeTxKey = lists:keyfind(<<"tx">>, 1, QsVals),
             MaybeParentKey = lists:keyfind(<<"parent">>, 1, QsVals),
@@ -42,7 +46,9 @@ resource_exists(Req, State) ->
                 _ ->
                     {true, Req, State}
             end;
-        Method = <<"P", _/binary>> ->
+        {<<"POST">>, <<"text/csv">>} ->
+            {false, Req, State};
+        {Method = <<"P", _/binary>>, _} ->
             {ok, Body, Req1} = cowboy_req:read_body(Req),
             KVs = kvs(Body),
             Tx = case Method of
@@ -323,6 +329,17 @@ fix_type(Key, List) when Key == "can"; Key == "usd" ->
     maybe_float(List);
 fix_type(_, List) ->
     list_to_binary(List).
+
+parse_csv(Req, State) ->
+    _Types = [rbc],
+    QsVals = cowboy_req:parse_qs(Req),
+    {_, Type0} = lists:keyfind(<<"type">>, 1, QsVals),
+    Type = erlang:binary_to_existing_atom(Type0, utf8),
+    %io:format(user, "Type = ~p~n", [Type]),
+    {ok, CSV, Req1} = cowboy_req:read_body(Req),
+    %io:format(user, "CSV = ~p~n", [CSV]),
+    budget:import_binary(Type, CSV),
+    {true, Req1, State}.
 
 i2l(I) ->
     integer_to_list(I).
