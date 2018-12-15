@@ -96,6 +96,7 @@ function load_transactions(){
 
   for (let key in tx){
     if(key == "id" ||
+      key == "acct_num" ||
       key == "parent" ||
       key == "child_number" ||
       key == "is_parent" ||
@@ -166,9 +167,7 @@ function create_tx_row(tbody, obj, pos){
 
   for(var k in obj){
     val = obj[k];
-    if(k == "id"){
-      continue;
-    }else if(k == "note"){
+    if(k == "id" || k == "note" || k == "acct_num"){
       continue;
     }else if(k == "categories"){
       cell = row.insertCell(row.cells.length);
