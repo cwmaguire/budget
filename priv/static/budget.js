@@ -672,8 +672,6 @@ function note_text_change(event){
 
 function upload_file(event){
   let file = elem_by_id("uploadFile").files[0];
-  console.log("File is ...");
-  console.log(file);
   // FIXME Don't hard code the type.
   // Either detect it or have the user specify.
   http_post_file("transaction/?type=rbc", file, upload_complete);
@@ -698,9 +696,7 @@ function subtract_interval(date, interval){
   let deltaMillis = -1;
   switch(interval) {
     case "1 week ago":
-      console.log("dateMillis: " + dateMillis);
       deltaMillis = milliseconds_delta("1 week");
-      console.log("deltaMillis: " + deltaMillis);
       return new Date(dateMillis - deltaMillis);
       break;
     case "2 weeks ago":
