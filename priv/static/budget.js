@@ -682,3 +682,91 @@ function upload_file(event){
 function upload_complete(event){
   console.log(event);
 }
+
+function preset_from_date_change(event){
+  let presetFromDate = event.target;
+  let interval = presetFromDate.value;
+  let fromDateText = elem_by_id('fromDateText');
+  let now = new Date();
+  let presetDate = subtract_interval(now, interval);
+  fromDateText.value = format_date(presetDate);
+  presetFromDate.value = "";
+}
+
+function subtract_interval(date, interval){
+  let dateMillis = date.getTime();
+  let deltaMillis = -1;
+  switch(interval) {
+    case "1 week ago":
+      console.log("dateMillis: " + dateMillis);
+      deltaMillis = milliseconds_delta("1 week");
+      console.log("deltaMillis: " + deltaMillis);
+      return new Date(dateMillis - deltaMillis);
+      break;
+    case "2 weeks ago":
+      deltaMillis = milliseconds_delta("2 weeks");
+      return new Date(dateMillis - deltaMillis);
+      break;
+    case "3 weeks ago":
+      deltaMillis = milliseconds_delta("3 weeks");
+      return new Date(dateMillis - deltaMillis);
+      break;
+    case "4 weeks ago":
+      deltaMillis = milliseconds_delta("4 weeks");
+      return new Date(dateMillis - deltaMillis);
+      break;
+    case "6 weeks ago":
+      deltaMillis = milliseconds_delta("6 weeks");
+      return new Date(dateMillis - deltaMillis);
+      break;
+    case "1 month ago":
+      deltaMillis = milliseconds_delta("1 month");
+      return new Date(dateMillis - deltaMillis);
+      break;
+    case "2 months ago":
+      deltaMillis = milliseconds_delta("2 months");
+      return new Date(dateMillis - deltaMillis);
+      break;
+  }
+}
+
+function milliseconds_delta(interval){
+  const MINUTE_MILLIS = 60000;
+  const HOUR_MILLIS = MINUTE_MILLIS * 60;
+  const DAY_MILLIS = HOUR_MILLIS * 24;
+  const WEEK_MILLIS = DAY_MILLIS * 7;
+  const MONTH_MILLIS = DAY_MILLIS * 30;
+  switch(interval){
+    case "1 week":
+      return WEEK_MILLIS;
+      break;
+    case "2 weeks":
+      return 2 * WEEK_MILLIS;
+      break;
+    case "3 weeks":
+      return 3 * WEEK_MILLIS;
+      break;
+    case "4 weeks":
+      return 4 * WEEK_MILLIS;
+      break;
+    case "6 weeks":
+      return 6 * WEEK_MILLIS;
+      break;
+    case "6 weeks":
+      return 6 * WEEK_MILLIS;
+      break;
+    case "1 month":
+      return 1 * MONTH_MILLIS;
+      break;
+    case "2 months":
+      return 2 * MONTH_MILLIS;
+      break;
+  }
+}
+
+function format_date(date1){
+  let day = date1.getDate();
+  let month = date1.getMonth() + 1;
+  let year = date1.getFullYear();
+  return year + "-" + month + "-" + (day < 10 ? "0" + day : day);
+}

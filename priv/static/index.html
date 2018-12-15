@@ -15,38 +15,55 @@
   <script src="budget_http.js" language="JavaScript"></script>
   <script src="budget.js" language="JavaScript"></script>
   <body onload="fetch_categories()">
+    Upload File:
+    <input id="uploadFile" type="file">
+    <input id="uploadButton" type="button" value="upload" onclick="upload_file();">
+
     <table style="font-size: 100%">
       <tr>
         <td>
           From:
         </td>
         <td>
-          <input id="fromDateText" type="text" value="2018-10-01">
+          <input id="fromDateText" type="date" value="2018-11-15">
         </td>
         <td>
-          Upload File:
-        </td>
-        <td>
-          <input id="uploadFile" type="file">
-        </td>
-        <td>
-          <input id="uploadButton" type="button" value="upload" onclick="upload_file();">
+          <input list="presetFromDates"
+                 id="presetFrom"
+                 name="presetFrom"
+                 onchange="preset_from_date_change(event);" />
+
+          <datalist id="presetFromDates">
+              <option value="1 week ago">
+              <option value="2 weeks ago">
+              <option value="3 weeks ago">
+              <option value="1 month ago">
+              <option value="6 weeks ago">
+              <option value="2 months ago">
+          </datalist>
         </td>
       </tr>
-      <tr>
+      </tr>
         <td>
           To:
         </td>
         <td>
-          <input id="toDateText" type="text" value="2018-10-03">
+          <input id="toDateText" type="date" value="2019-12-31">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          &nbsp;
+        </td>
+        <td>
+          <button display="query"
+            text="query"
+            onclick="fetch_transactions();">
+            Fetch
+          </button>
         </td>
       </tr>
     </table>
-    <button display="query"
-      text="query"
-      onclick="fetch_transactions();">
-      Fetch
-    </button>
     </table>
   </body>
 </html>
