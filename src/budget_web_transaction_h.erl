@@ -166,9 +166,16 @@ tx_query(WhereClause) ->
               "t.child_number, "
               "t.\"note\" ",
 
-    "select t.*, "
+    "select t.id, "
+    "       t.date, "
+    "       t.posted, "
+    "       t.cheq_num \"cheq #\", "
+    "       t.desc_1 || ' ' || t.desc_2 \"desc\", "
+    "       t.cad, "
+    "       t.usd, "
     "       string_agg(c.name || '||' || tc.id, ', ') categories, "
-    "       max(t_child.child_number) > 0 \"is_parent\" "
+    "       max(t_child.child_number) > 0 \"is_parent\", "
+    "       t.note "
     "from transaction t "
     "left join transaction t_child "
     "  on t.id = t_child.parent "
