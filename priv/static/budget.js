@@ -204,6 +204,7 @@ function create_tx_row(tbody, obj, pos){
       var amountText = document.createElement("INPUT");
       amountText.setAttribute("type", "text");
       amountText.value = val;
+      amountText.className = "dollarAmount";
       amountText.addEventListener("change", amount_text_change);
       cell.appendChild(amountText);
       continue;
