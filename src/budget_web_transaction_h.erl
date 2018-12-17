@@ -168,6 +168,7 @@ tx_query(WhereClause) ->
 
     "select t.id, "
     "       t.date, "
+    "       t.acct_type \"acct\", "
     "       t.posted, "
     "       t.cheq_num \"cheq #\", "
     "       coalesce(t.desc_1,'') || ' ' || coalesce(t.desc_2,'') \"desc\", "

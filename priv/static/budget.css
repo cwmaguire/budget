@@ -35,6 +35,7 @@ body {font-size: 80%; }
 }
 
 .invalid{
+  width: 65px;
   color: red;
 }
 
