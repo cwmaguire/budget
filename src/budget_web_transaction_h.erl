@@ -170,7 +170,7 @@ tx_query(WhereClause) ->
     "       t.date, "
     "       t.posted, "
     "       t.cheq_num \"cheq #\", "
-    "       t.desc_1 || ' ' || t.desc_2 \"desc\", "
+    "       coalesce(t.desc_1,'') || ' ' || coalesce(t.desc_2,'') \"desc\", "
     "       t.cad, "
     "       t.usd, "
     "       string_agg(c.name || '||' || tc.id, ', ') categories, "
@@ -186,7 +186,7 @@ tx_query(WhereClause) ->
     "  on tc.cat_id = c.id " ++
     WhereClause ++
     "group by " ++ GroupBy ++
-    "order by t.\"date\", coalesce(t.parent, t.id), t.child_number;".
+    "order by t.\"date\" desc, coalesce(t.parent, t.id), t.child_number;".
 
 to_date(List) ->
     DateStrings = string:split(List, "-", all),
