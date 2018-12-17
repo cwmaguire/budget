@@ -614,9 +614,9 @@ function disable_row(row){
 
 function amount_text_change(event){
   let row = event.target.parentElement.parentElement;
-  let cadText = row.cells[8].childNodes[0];
+  let cadText = row.cells[5].childNodes[0];
   let cad = cadText.value;
-  let usdText = row.cells[9].childNodes[0];
+  let usdText = row.cells[6].childNodes[0];
   let usd = usdText.value;
   let isValid = true;
 
@@ -639,18 +639,21 @@ function amount_text_change(event){
     usdText.className = "";
     http_put(
       "transaction/" + row.id,
-      "cad=" + cad + "&usd=" + usd,
+      "cad=" + add_decimal(cad) + "&usd=" + add_decimal(usd),
       function(){}
     );
   }
 }
 
 function is_float(maybeFloat){
-  return !isNaN(parseFloat(maybeFloat));
+  return !isNaN(parseFloat(maybeFloat)) &&
+    maybeFloat.match(/^-?\d+(\.(?=\d)\d*$)?$/);
 }
 
 function add_decimal(number){
-  if(number.indexOf(".") == -1){
+  if(number.length == 0){
+    return number;
+  }else if(number.indexOf(".") == -1){
     return number + ".0";
   }else{
     return number;

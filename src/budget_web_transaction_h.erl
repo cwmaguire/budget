@@ -321,11 +321,12 @@ delete_resource(Req, State) ->
 update_tx(Tx, KVs) ->
     Keys = [K || {K, _} <- KVs],
     Values = [fix_type(K, V) || {K, V} <- KVs],
+    TxIdParamPlaceholder = [$$, integer_to_list(length(KVs) + 1)],
     UpdateSql = lists:flatten(["update transaction "
                                "set ",
                                kv_sql(Keys),
-                               " where id = $",
-                               integer_to_list(length(KVs) + 1)]),
+                               " where id = ",
+                               TxIdParamPlaceholder]),
     budget_query:update(UpdateSql, Values ++ [Tx]).
 
 kv_sql(Keys) ->
@@ -333,7 +334,7 @@ kv_sql(Keys) ->
     KeyNums = lists:zip(Keys, ParamNums),
     lists:join($,, [[K, " = $", i2l(N)] || {K, N} <- KeyNums]).
 
-fix_type(Key, List) when Key == "can"; Key == "usd" ->
+fix_type(Key, List) when Key == "cad"; Key == "usd" ->
     maybe_float(List);
 fix_type(_, List) ->
     list_to_binary(List).
@@ -343,9 +344,7 @@ parse_csv(Req, State) ->
     QsVals = cowboy_req:parse_qs(Req),
     {_, Type0} = lists:keyfind(<<"type">>, 1, QsVals),
     Type = erlang:binary_to_existing_atom(Type0, utf8),
-    %io:format(user, "Type = ~p~n", [Type]),
     {ok, CSV, Req1} = cowboy_req:read_body(Req),
-    %io:format(user, "CSV = ~p~n", [CSV]),
     budget:import_binary(Type, CSV),
     {true, Req1, State}.
 
@@ -357,9 +356,12 @@ b2i(Bin) ->
 
 maybe_float("") ->
     null;
-maybe_float(List) ->
-    to_float(List).
+maybe_float(<<"">>) ->
+    null;
+maybe_float(Other) ->
+    to_float(Other).
 
-to_float(List) ->
-    %% TODO figure out if it's an int or a float and convert it.
-    list_to_float(List).
+to_float(List) when is_list(List) ->
+    list_to_float(List);
+to_float(Bin) when is_binary(Bin) ->
+    binary_to_float(Bin).
