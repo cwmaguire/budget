@@ -33,4 +33,19 @@ create unique index on transaction_category(tx_id, cat_id);
 create table category_rule(
   id serial primary key,
   match varchar,
-  cat_id int references category(id));
+  cat_id int references category(id))
+);
+
+create table budget_period(
+  id serial primary key,
+  period varchar
+);
+
+create table category_budget(
+  id serial primary key,
+  cat_id int references category(id),
+  budget numeric,
+  period_id int references budget_period(id),
+  "start" timestamp without time zone,
+  "end" timestamp without time zone
+);
