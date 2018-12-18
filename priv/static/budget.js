@@ -17,21 +17,21 @@ const amp = "&";
 // TODO Add notes
 // It's helpful to know a little more detail about obscure transactions
 
-var selectedRowIds = [];
-var checkboxes = {};
-var rows = {};
-var cats;
+let selectedRowIds = [];
+let checkboxes = {};
+let rows = {};
+let cats;
 
 // fetch button onclick handler
 function fetch_transactions(){
   const scriptId = "transactionsScript";
-  var oldScript = elem_by_id(scriptId);
-  var fromDate = get_val("fromDateText");
-  var toDate = get_val("toDateText");
+  let oldScript = elem_by_id(scriptId);
+  let fromDate = get_val("fromDateText");
+  let toDate = get_val("toDateText");
   if(oldScript){
     oldScript.remove();
   }
-  var s = document.createElement("script");
+  let s = document.createElement("script");
   s.src = "http://localhost:8080/transaction/" +
     "?callback=transactions" +
     "&from=" + fromDate +
@@ -48,11 +48,11 @@ function fetch_transactions(){
 // body.onload handler
 function fetch_categories(){
   const scriptId = "categoriesScript";
-  var oldScript = elem_by_id(scriptId);
+  let oldScript = elem_by_id(scriptId);
   if(oldScript){
     oldScript.remove();
   }
-  var s = document.createElement("script");
+  let s = document.createElement("script");
   s.src = "http://localhost:8080/category" +
     "?callback=categories";
   s.id = scriptId;
@@ -66,27 +66,27 @@ function fetch_categories(){
 }
 
 function load_transactions(){
-  var txs = transactions();
+  let txs = transactions();
   if(txs.length == 0){
     return;
   }
 
   checkboxes = {};
 
-  var oldTable = elem_by_id("table1");
+  let oldTable = elem_by_id("table1");
   if(oldTable){
     oldTable.remove();
   }
-  var table = document.createElement("table");
+  let table = document.createElement("table");
   table.id = "table1";
   table.className = "table";
 
-  var header = table.createTHead();
-  var headerRow = header.insertRow(0);
-  var cell;
-  var tx = txs[0];
+  let header = table.createTHead();
+  let headerRow = header.insertRow(0);
+  let cell;
+  let tx = txs[0];
 
-  var selectCheckbox = document.createElement("INPUT");
+  let selectCheckbox = document.createElement("INPUT");
   selectCheckbox.setAttribute("type", "checkbox");
   selectCheckbox.id = "allOrNone";
   selectCheckbox.addEventListener("click", all_or_none_click);
@@ -165,7 +165,7 @@ function create_tx_row(tbody, obj, pos){
   cell.id = "cbx_cell_" + row.id;
   cell.appendChild(checkbox);
 
-  for(var k in obj){
+  for(let k in obj){
     val = obj[k];
     if(k == "id" || k == "note" || k == "acct_num"){
       continue;
@@ -200,7 +200,7 @@ function create_tx_row(tbody, obj, pos){
       cell = row.insertCell(row.cells.length);
       cell.id = "cell_" + k + "_" + row.id;
 
-      var amountText = document.createElement("INPUT");
+      let amountText = document.createElement("INPUT");
       amountText.setAttribute("type", "text");
       amountText.value = val;
       amountText.className = "dollarAmount";
@@ -250,7 +250,7 @@ function create_tx_row(tbody, obj, pos){
   cell = row.insertCell(row.cells.length);
   cell.id = "tx_note_cell_" + row.id;
 
-  var noteText = document.createElement("INPUT");
+  let noteText = document.createElement("INPUT");
   noteText.setAttribute("type", "text");
   noteText.value = obj.note;
   noteText.addEventListener("change", note_text_change);
@@ -294,33 +294,33 @@ function add_categories_to_datalist(datalist){
 }
 
 function insert_category(datalist, category){
-  var option = document.createElement("OPTION");
+  let option = document.createElement("OPTION");
   option.id = datalist.id + "_option_cat_" + category['id'];
   option.value = category['name'];
   datalist.appendChild(option);
 }
 
 function get_val(Id){
-  var element = elem_by_id(Id);
+  let element = elem_by_id(Id);
   return element.value;
 }
 
 function cell_mouse_over(event){
-  var cell = event.target;
+  let cell = event.target;
   if(!is_row_selected(cell)){
     cell.parentElement.style.backgroundColor = lightGrey;
   }
 }
 
 function cell_mouse_out(event){
-  var cell = event.target;
+  let cell = event.target;
   if(!is_row_selected(cell)){
     cell.parentElement.style.backgroundColor = white;
   }
 }
 
 function cell_mouse_click(event){
-  var cell = event.target;
+  let cell = event.target;
   if(is_row_selected(cell)){
     deselect_row_by_cell(cell);
   }else{
@@ -329,8 +329,8 @@ function cell_mouse_click(event){
 }
 
 function cbx_mouse_click(event){
-  var cbx = event.target;
-  var newEvent = {'target': cbx.parentElement};
+  let cbx = event.target;
+  let newEvent = {'target': cbx.parentElement};
   // don't let the row handle the click
   event.stopPropagation();
   cell_mouse_click(newEvent);
@@ -339,20 +339,20 @@ function cbx_mouse_click(event){
 function cbx_mouse_over(event){
   event.stopPropagation;
   event.preventDefault;
-  var cbx = event.target;
-  var parent = cbx.parentElement;
+  let cbx = event.target;
+  let parent = cbx.parentElement;
   row_mouse_over({'target': parent});
 }
 
 function cbx_mouse_out(event){
   event.stopPropagation;
-  var cbx = event.target;
-  var parent = cbx.parentElement;
+  let cbx = event.target;
+  let parent = cbx.parentElement;
   row_mouse_out({'target': parent});
 }
 
 function is_row_selected(cell){
-  var row = cell.parentElement;
+  let row = cell.parentElement;
   return -1 != selectedRowIds.findIndex(x => x == row.id);
 }
 
