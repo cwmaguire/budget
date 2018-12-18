@@ -30,14 +30,31 @@ function draw_cumulative_graph(min, max, dataPoints){
 function draw_bar_gauge({x, y, w, h}, amount, max){
   let canvas = elem("canvas1");
   let ctx = canvas.getContext("2d");
-  let innerY = Math.round(y + Math.round(h * 0.05));
-  let innerH = Math.round(h * 0.9);
+  let innerY = Math.round(y + Math.round(h * 0.1));
+  let innerH = Math.round(h * 0.8);
   let innerW = Math.round(w / max * amount);
-  // TODO: if we've overspent then we need to draw this differently
+
   ctx.fillStyle = 'black';
   ctx.strokeRect(x, y, w, h);
+
+  // TODO: different colours for different states: under budget, close to budget, over budget
   ctx.fillStyle = 'orange';
   ctx.fillRect(x + 1, innerY, innerW, innerH);
+
+  ctx.fillStyle = 'black';
+  ctx.strokeRect(x, y, w, h);
+
+  ctx.font = '12px Times New Roman';
+  ctx.fillStyle = 'Black';
+  let amountTextMetrics = ctx.measureText('' + amount);
+  let maxTextMetrics = ctx.measureText('' + max);
+  ctx.fillText('' + 'Dec 18, 2018', x, y - 2);
+  ctx.fillText('' + max, x + w - maxTextMetrics.width, y + h + 10);
+
+  let amountText = '' + amount;
+  let amountX = x + innerW - amountTextMetrics.width - 3;
+  let amountY = innerY + innerH - 3;
+  ctx.fillText(amountText, amountX, amountY);
 }
 
 
