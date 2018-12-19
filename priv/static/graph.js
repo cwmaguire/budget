@@ -89,7 +89,7 @@ function draw_cumulative_graph(
   if(spentThisPeriod > 0){
     ctx.fillText('' + spentThisPeriod, spentThisPeriodX + 3, innerYBottom + 11);
   }
-  ctx.fillText('0', x, y + h + 10);
+  ctx.fillText('0', savedPrePeriodX, y + h + 10);
   if(spent > saved){
     ctx.fillText('' + (saved - spent), x, y + h + 10);
   }
