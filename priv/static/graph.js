@@ -4,27 +4,95 @@ function elem(id){
   return document.getElementById(id);
 }
 
-function draw_cumulative_graph(min, max, dataPoints){
+function draw_cumulative_graph(
+  {x, y, w, h},
+  {totalBudget,
+   perPeriodBudget,
+   currentPeriod,
+   savedPrePeriod,
+   savedThisPeriod,
+   spentPrePeriod,
+   spentThisPeriod}){
   let canvas = elem("canvas1");
   let ctx = canvas.getContext("2d");
-  let h = canvas.height;
-  let w = canvas.width;
-  clear(ctx, w, h);
-  ctx.fillStyle = rgb(state.frame);
-  ctx.strokeStyle = "#F00";
-  let i = 0;
-  for(i = 100; i <= 100; i += 10){
-    rotatedSquares(ctx,                       // The context of the canvas to paint with
-                   state.frame - i,           // What frame we want to base the square off of
-                   Math.floor(i / 10),        // Rate of increment for square color and angle
-                   30,                        // How close to the right edge of the canvas the square can get
-                   30,                        // How close to the bottom edge of the canvase the square can get
-                   Math.floor((i - 100) / 5), // How many pixels per frame to move
-                   w,                         // width of the canvas
-                   h,                         // height of the canvas
-                   i);                        // size of the square
+
+  let innerH = Math.round(h * 0.4);
+  let innerYTop = Math.round(y + Math.round(h * 0.1));
+  let innerYBottom = Math.round(y + Math.round(h * 0.5));
+  let saved = savedPrePeriod + savedThisPeriod;
+  let spent = spentPrePeriod + spentThisPeriod;
+
+  let offsetForOutline = 1;
+  let total = 0;
+  if(spent > saved){
+    total = totalBudget + spent - saved;
+  }else{
+    total = totalBudget;
   }
-  return clone(state);
+
+  let widthFraction = (w - 2) / total;
+  let zeroPos = x + offsetForOutline;
+  if(spent > saved){
+    zeroPos += Math.round(widthFraction * (spent - saved));
+  }
+
+  let savedPrePeriodW = Math.round(savedPrePeriod * widthFraction);
+  let savedPrePeriodX = zeroPos;
+
+  let savedThisPeriodW = Math.round(savedThisPeriod * widthFraction);
+  let savedThisPeriodX = zeroPos + savedPrePeriodW;
+
+  let spentPrePeriodW = Math.round(spentPrePeriod * widthFraction);
+  let spentPrePeriodX = savedThisPeriodX + savedThisPeriodW - spentPrePeriodW;
+
+  let spentThisPeriodW = Math.round(spentThisPeriod * widthFraction);
+
+  let spentThisPeriodX = spentPrePeriodX - spentThisPeriodW;
+
+  ctx.fillStyle = 'green';
+  ctx.fillRect(savedThisPeriodX, innerYTop, savedThisPeriodW, innerH);
+
+  ctx.fillStyle = 'darkgreen';
+  ctx.fillRect(savedPrePeriodX, innerYTop, savedPrePeriodW, innerH);
+
+  ctx.fillStyle = 'orange';
+  ctx.fillRect(spentThisPeriodX, innerYBottom, spentThisPeriodW, innerH);
+
+  ctx.fillStyle = 'brown';
+  ctx.fillRect(spentPrePeriodX, innerYBottom, spentPrePeriodW, innerH);
+
+  ctx.fillStyle = 'black';
+  ctx.strokeRect(x, y, w, h);
+
+  ctx.font = '12px Times New Roman';
+  ctx.fillStyle = 'black';
+  let savedPrePeriodTM = ctx.measureText('' + savedPrePeriod);
+  let savedThisPeriodTM = ctx.measureText('' + savedThisPeriod);
+  let spentPrePeriodTM = ctx.measureText('' + spentPrePeriod);
+  let spentThisPeriodTM = ctx.measureText('' + spentThisPeriod);
+  let totalBudgetTM = ctx.measureText('' + totalBudget);
+
+  ctx.fillText('Dec 18, 2018', x, y - 2);
+  ctx.fillText('' + totalBudget, x + w - totalBudgetTM.width, y + h + 10);
+
+  ctx.fillStyle = 'white';
+  if(savedPrePeriod > 0){
+    ctx.fillText('' + savedPrePeriod, savedPrePeriodX + 3, innerYTop + 11);
+  }
+  if(savedThisPeriod > 0){
+    ctx.fillText('' + savedThisPeriod, savedThisPeriodX + 3, innerYTop + 11);
+  }
+  if(spentPrePeriod){
+    ctx.fillText('' + spentPrePeriod, spentPrePeriodX + 3, innerYBottom + 11);
+  }
+  ctx.fillStyle = 'black';
+  if(spentThisPeriod > 0){
+    ctx.fillText('' + spentThisPeriod, spentThisPeriodX + 3, innerYBottom + 11);
+  }
+  ctx.fillText('0', x, y + h + 10);
+  if(spent > saved){
+    ctx.fillText('' + (saved - spent), x, y + h + 10);
+  }
 }
 
 function draw_bar_gauge({x, y, w, h}, amount, max){
@@ -33,9 +101,6 @@ function draw_bar_gauge({x, y, w, h}, amount, max){
   let innerY = Math.round(y + Math.round(h * 0.1));
   let innerH = Math.round(h * 0.8);
   let innerW = Math.round(w / max * amount);
-
-  ctx.fillStyle = 'black';
-  ctx.strokeRect(x, y, w, h);
 
   // TODO: different colours for different states: under budget, close to budget, over budget
   ctx.fillStyle = 'orange';
