@@ -673,9 +673,8 @@ function note_text_change(event){
 
 function upload_file(event){
   let file = elem_by_id("uploadFile").files[0];
-  // FIXME Don't hard code the type.
-  // Either detect it or have the user specify.
-  http_post_file("transaction/?type=rbc", file, upload_complete);
+  let type = elem_by_id("csvType").value;
+  http_post_file("transaction/?type=" + type, file, upload_complete);
 }
 
 function upload_complete(event){

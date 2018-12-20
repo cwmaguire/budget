@@ -20,6 +20,9 @@ import_binary(Type, Binary) ->
 
 %% Use when running from web
 import_binary(Type, Binary, DbOpts) ->
+    io:format(user, "Binary = ~p~n", [Binary]),
+    io:format(user, "Type = ~p~n", [Type]),
+
     [_Header | Records] = budget_csv:parse(Binary),
     HashedRecords = hashed_records(Records),
     Inserts = insert(Type, HashedRecords, DbOpts),
@@ -78,12 +81,41 @@ insert_(rbc, HashedRecords, Conn) ->
     io:format(user,
               "Records: ~p, Inserted: ~p, Errors: ~p~n",
               [NumRecords, NumInserted, NumErrors]),
+    Inserts;
+insert_(capital_one, HashedRecords, Conn) ->
+    ParsedRecs = [parse(capital_one, R) || R <- HashedRecords],
+    Sql = "insert into transaction "
+          "(id, date, posted, acct_type, acct_num, desc_1, desc_2, cad) "
+          "values "
+          "($1, $2, $3, 'capital one', $4, $5, $6, $7); ",
+    Results = [{budget_db:query(Conn, Sql, R), R} || R <- ParsedRecs],
+    Inserts = [Rec || {{ok, _}, Rec} <- Results],
+    io:format(user, "Inserts = ~p~n", [Inserts]),
+    Errors = [{Err, Rec} || {{error, Err}, Rec} <- Results],
+    [print_error(Err, Rec) || {Err, Rec} <- Errors],
+    NumRecords = length(ParsedRecs),
+    NumErrors = length(Errors),
+    NumInserted = NumRecords - NumErrors,
+    io:format(user,
+              "Records: ~p, Inserted: ~p, Errors: ~p~n",
+              [NumRecords, NumInserted, NumErrors]),
     Inserts.
 
 parse(rbc, Rec) ->
     [Hash, Type, Acct, Date, ChequeNum, Desc1, Desc2, Cad, Usd] = Rec,
     Acct1 = to_list(Acct),
     Rec1 = [Hash, Type, Acct1, Date, ChequeNum, Desc1, Desc2, Cad, Usd],
+    [normalize(Field) || Field <- Rec1];
+parse(capital_one, Rec) ->
+    [Hash, Date, Posted, Acct, Desc, Category, Debit, Credit] = Rec,
+    Acct1 = to_list(Acct),
+    Amount = case Debit of
+                 "" ->
+                     -Credit;
+                 _ ->
+                     Debit
+             end,
+    Rec1 = [Hash, Date, Posted, Acct1, Category, Desc, Amount],
     [normalize(Field) || Field <- Rec1].
 
 to_list(List) when is_list(List) ->
@@ -148,9 +180,17 @@ matches(rbc, Recs, Rules) ->
     Fields = [rbc_match_fields(Rec) || Rec <- Recs],
     Results = [{Id, re:run(Desc, M), Cat} || {Id, Desc} <- Fields,
                                              {M, Cat} <- Rules],
+    lists:usort([{Tx, Cat} || {Tx, {match, _}, Cat} <- Results]);
+matches(capital_one, Recs, Rules) ->
+    Fields = [capital_one_match_fields(Rec) || Rec <- Recs],
+    Results = [{Id, re:run(Desc, M), Cat} || {Id, Desc} <- Fields,
+                                             {M, Cat} <- Rules],
     lists:usort([{Tx, Cat} || {Tx, {match, _}, Cat} <- Results]).
 
 rbc_match_fields([Id, _, _, _, _, Desc1, Desc2, _, _]) ->
+    {Id, lists:flatten([null_to_list(Desc1), " ", null_to_list(Desc2)])}.
+
+capital_one_match_fields([Id, _, _, _, Desc1, Desc2, _]) ->
     {Id, lists:flatten([null_to_list(Desc1), " ", null_to_list(Desc2)])}.
 
 null_to_list(null) ->

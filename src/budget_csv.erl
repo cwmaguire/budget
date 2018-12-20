@@ -6,7 +6,14 @@
 -define(IS_DATE_SEP(S), S == $-; S == $/).
 
 parse(Csv) ->
-    [_Header | Lines] = binary:split(Csv, <<"\r\n">>, [global]),
+    [_ | Lines] = case binary:split(Csv, <<"\r\n">>, [global]) of
+                      Match = [_Header , _First | _Rest] ->
+                          io:format("Match on \\r\\n~n~p~n", [Match]),
+                          Match;
+                      _NoMatch ->
+                          io:format("No match on \\r\\n~n"),
+                          binary:split(Csv, <<"\n">>, [global])
+                  end,
     Records = [record(L) || L <- Lines, size(L) > 0],
     [[parse_value(F) || F <- Rec] || Rec <- Records].
 
@@ -23,7 +30,7 @@ record(none, <<$", Bin/binary>>, _F, Fs) ->
 record(none, <<S, Bin/binary>>, _F, Fs) ->
     record(string, Bin, <<S>>, Fs);
 record(_, <<>>, _, Fs) ->
-    lists:reverse(Fs);
+    lists:reverse([null | Fs]);
 
 record(integer, <<I, Bin/binary>>, F, Fs) when ?IS_INT(I) ->
     record(integer, Bin, <<F/binary, I>>, Fs);
