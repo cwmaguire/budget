@@ -102,7 +102,7 @@ insert_(capital_one, HashedRecords, Conn) ->
     Inserts.
 
 parse(rbc, Rec) ->
-    [Hash, Type, Acct, Date, ChequeNum, Desc1, Desc2, Cad, Usd] = Rec,
+    [Hash, Type, Acct, Date, ChequeNum, Desc1, Desc2, Cad, Usd, _] = Rec,
     Acct1 = to_list(Acct),
     Rec1 = [Hash, Type, Acct1, Date, ChequeNum, Desc1, Desc2, Cad, Usd],
     [normalize(Field) || Field <- Rec1];
