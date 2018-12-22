@@ -240,8 +240,9 @@ copy_parent(ParentId) ->
                             1,
                             Child0,
                             {date, Date}),
+io:format(user, "Child1 = ~p~n", [Child1]),
 
-    Child2 = case proplists:get_value(posted, Child1) of
+    Child2 = case proplists:get_value(<<"posted">>, Child1) of
                   {Posted, _} ->
                       lists:keystore(<<"posted">>,
                                      1,
@@ -257,6 +258,7 @@ copy_parent(ParentId) ->
                             {child_number, NumChildren}),
 
     Values = [V || {_K, V} <- Child3],
+io:format(user, "Values = ~p~n", [Values]),
 
     InsertSql = "insert into transaction "
                 "(id, acct_type, acct_num, date, "
