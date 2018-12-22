@@ -606,7 +606,7 @@ function delete_category(catSpan){
 }
 
 function disable_row(row){
-  [11,12].forEach(
+  [9,10].forEach(
     function(i){
       row.cells[i].childNodes.forEach(function (e){ e.remove(); });
     });
