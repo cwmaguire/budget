@@ -606,9 +606,15 @@ function delete_category(catSpan){
 }
 
 function disable_row(row){
-  [9,10].forEach(
-    function(i){
-      row.cells[i].childNodes.forEach(function (e){ e.remove(); });
+  let catDatalist = elem_by_id('cat_dl_' + row.id);
+  let catInput = elem_by_id('cat_input_' + row.id);
+  let addCatButton = elem_by_id('cat_add_button_' + row.id);
+  let deleteButton = elem_by_id('tx_delete_button_' + row.id);
+
+  let elems = [catDatalist, catInput, addCatButton, deleteButton];
+  elems.forEach(
+    function(elem){
+      elem.remove();
     });
 }
 
