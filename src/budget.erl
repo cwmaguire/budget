@@ -35,7 +35,8 @@ hashed_records(Records) ->
 hashed_record(Rec) ->
     Strings = [serialize(Field) || Field <- Rec],
     String = lists:flatten(Strings),
-    Hash = xxhash:hash64(String),
+    NoSpaces = lists:filter(fun($ ) -> false; (_) -> true end, String),
+    Hash = xxhash:hash64(NoSpaces),
     [Hash | Rec].
 
 serialize(Atom) when is_atom(Atom) ->
