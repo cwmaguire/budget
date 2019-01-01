@@ -53,7 +53,12 @@ resource_exists(Req, State) ->
             KVs = kvs(Body),
             Tx = case Method of
                      <<"POST">> ->
-                         list_to_integer(proplists:get_value("tx_id", KVs));
+                         case proplists:get_value("tx_id", KVs) of
+                             undefined ->
+                                 undefined;
+                             Id ->
+                                 list_to_integer(Id)
+                         end;
                      <<"PUT">> ->
                          cowboy_req:binding(tx_id, Req)
                  end,
@@ -62,6 +67,8 @@ resource_exists(Req, State) ->
             {true, Req, State}
     end.
 
+tx_exists(undefined) ->
+    false;
 tx_exists(TxId) ->
     Sql = "select id "
           "from transaction t "
@@ -72,14 +79,19 @@ create_or_update_tx(Req, State) ->
     KVs = proplists:get_value(kvs, State),
     case cowboy_req:method(Req) of
         <<"POST">> ->
-            Tx = list_to_integer(proplists:get_value("tx_id", KVs)),
-            Callback = proplists:get_value("callback", KVs),
-            Hash = copy_parent(Tx),
-            URL = <<"/transaction?tx_id=",
-                    (integer_to_binary(Hash))/binary,
-                    "&callback=",
-                    (list_to_binary(Callback))/binary>>,
-            {{true, URL}, Req, State};
+            case lists:keyfind("tx_id", 1, KVs) of
+                {"tx_id", TxId} ->
+                    Tx = list_to_integer(TxId),
+                    Callback = proplists:get_value("callback", KVs),
+                    Hash = copy_parent(Tx),
+                    URL = <<"/transaction?tx_id=",
+                            (integer_to_binary(Hash))/binary,
+                            "&callback=",
+                            (list_to_binary(Callback))/binary>>,
+                    {{true, URL}, Req, State};
+                false ->
+                    insert_tx(Req, State, KVs)
+            end;
         <<"PUT">> ->
             Tx = cowboy_req:binding(tx_id, Req),
             update_tx(Tx, KVs),
@@ -269,6 +281,56 @@ copy_parent(ParentId) ->
     1 = budget_query:update(InsertSql, HashedChild1),
     Hash.
 
+insert_tx(Req, State, KVs) ->
+    AcctType = proplists:get_value("acct_type", KVs),
+    AcctNum = proplists:get_value("acct_num", KVs, null),
+    Date = proplists:get_value("date", KVs),
+    Posted = proplists:get_value("posted", KVs, null),
+    CheqNum = proplists:get_value("cheq_num", KVs, null),
+    Desc1 = proplists:get_value("desc_1", KVs, null),
+    Desc2 = proplists:get_value("desc_2", KVs, null),
+    Cad = proplists:get_value("cad", KVs),
+    Usd = proplists:get_value("usd", KVs),
+    Note = proplists:get_value("note", KVs, null),
+
+    insert_tx_(Req, State, AcctType, AcctNum, Date, Posted, CheqNum, Desc1, Desc2, Cad, Usd, Note).
+
+insert_tx_(Req, State, AcctType, _, Date, _, _, Desc1, Desc2, Cad, Usd, _)
+  when AcctType == undefined;
+       Date == undefined;
+       Desc1 == null andalso Desc2 == null;
+       Cad == undefined andalso Usd == undefined ->
+    io:format(user, "insert_tx_ missing value. Usd = ~p~n", [Usd]),
+    io:format(user, "insert_tx_ missing value. Cad = ~p~n", [Cad]),
+    io:format(user, "insert_tx_ missing value. Desc2 = ~p~n", [Desc2]),
+    io:format(user, "insert_tx_ missing value. Desc1 = ~p~n", [Desc1]),
+    io:format(user, "insert_tx_ missing value. Date = ~p~n", [Date]),
+    io:format(user, "insert_tx_ missing value. AcctType = ~p~n", [AcctType]),
+    {false, Req, State};
+
+insert_tx_(Req, State,
+           AcctType, AcctNum, Date, Posted, CheqNum,
+           Desc1, Desc2, Cad, Usd, Note) ->
+    io:format(user, "insert_tx_ Desc1 = ~p~n", [Desc1]),
+
+    SqlDate = to_date(Date),
+    CadFloat = maybe_float(Cad),
+    UsdFloat = maybe_float(Usd),
+
+    Values = [AcctType, AcctNum, SqlDate, Posted, CheqNum, Desc1, Desc2,
+              CadFloat, UsdFloat, Note],
+
+    InsertSql = "insert into transaction "
+                "(id, acct_type, acct_num, date, posted, "
+                " cheq_num, desc_1, desc_2, cad, usd, note) "
+                "values "
+                "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ",
+
+    ValuesWithHash = hashed_record(Values),
+
+    Result = budget_query:update(InsertSql, ValuesWithHash),
+    io:format(user, "Result = ~p~n", [Result]),
+    {true, Req, State}.
 
 hashed_record(Rec) ->
     Strings = [serialize(Field) || Field <- Rec],
@@ -362,7 +424,15 @@ maybe_float(<<"">>) ->
 maybe_float(Other) ->
     to_float(Other).
 
-to_float(List) when is_list(List) ->
-    list_to_float(List);
 to_float(Bin) when is_binary(Bin) ->
-    binary_to_float(Bin).
+    to_float(binary_to_list(Bin));
+to_float(List) when is_list(List) ->
+    to_float_(List).
+
+to_float_(List) ->
+    case string:find(List, ".") of
+        nomatch ->
+            list_to_float(List ++ ".0");
+        _ ->
+            list_to_float(List)
+    end.

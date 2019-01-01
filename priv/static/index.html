@@ -15,7 +15,7 @@
     <script src="budget.js" language="JavaScript"></script>
     <script src="budget_new.js" language="JavaScript"></script>
   </head>
-  <body onload="fetch_categories(); addNewEventListeners();">
+  <body onload="fetch_categories(); setup_new_dialog();">
     Upload File:
     <input id="uploadFile" type="file">
     <input id="uploadButton"
@@ -69,7 +69,7 @@
           &nbsp;
         </td>
         <td>
-          <input type="button" value="Fetch">
+          <input id="fetch" type="button" value="Fetch" onclick="fetch_transactions();">
           <input id="showAddDialog" type="button" value="Add">
         </td>
       </tr>

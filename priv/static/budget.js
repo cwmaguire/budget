@@ -770,5 +770,7 @@ function format_date(date1){
   let day = date1.getDate();
   let month = date1.getMonth() + 1;
   let year = date1.getFullYear();
-  return year + "-" + month + "-" + (day < 10 ? "0" + day : day);
+  return year + "-" +
+         (month < 10 ? "0" + month : month) + "-" +
+         (day < 10 ? "0" + day : day);
 }
