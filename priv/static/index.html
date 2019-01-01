@@ -13,8 +13,9 @@
     </style>
     <script src="budget_http.js" language="JavaScript"></script>
     <script src="budget.js" language="JavaScript"></script>
+    <script src="budget_new.js" language="JavaScript"></script>
   </head>
-  <body onload="fetch_categories()">
+  <body onload="fetch_categories(); addNewEventListeners();">
     Upload File:
     <input id="uploadFile" type="file">
     <input id="uploadButton"
@@ -68,14 +69,68 @@
           &nbsp;
         </td>
         <td>
-          <button display="query"
-            text="query"
-            onclick="fetch_transactions();">
-            Fetch
-          </button>
+          <input type="button" value="Fetch">
+          <input id="showAddDialog" type="button" value="Add">
         </td>
       </tr>
     </table>
-    </table>
+    <div id="newDialog" class="newDialog">
+      <table>
+        <tr>
+          <td>
+            date:
+          </td>
+          <td>
+            <input type="date" id="newDate">
+          </td>
+        </tr>
+        <tr>
+          <td>
+            acct:
+          </td>
+          <td>
+            <input type="text" id="newAcct" value="cash">
+          </td>
+        </tr>
+        <tr>
+          <td>
+            desc:
+          </td>
+          <td>
+            <input type="text" id="newDesc" value="" class="longText">
+          </td>
+        </tr>
+        <tr>
+          <td>
+            cad:
+          </td>
+          <td>
+            <input type="text" id="newCad" value="">
+          </td>
+        </tr>
+        <tr>
+          <td>
+            usd:
+          </td>
+          <td>
+            <input type="text" id="newUsd" value="">
+          </td>
+        </tr>
+        <tr>
+          <td>
+            note:
+          </td>
+          <td>
+            <input type="text" id="newNote" value="" class="longText">
+          </td>
+        </tr>
+      </table>
+      <input type="button"
+             id="newAddButton"
+             value="add">
+      <input type="button"
+             id="newCancelButton"
+             value="cancel">
+    </div>
   </body>
 </html>
